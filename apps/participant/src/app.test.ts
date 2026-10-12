@@ -164,9 +164,7 @@ describe('chat', () => {
     expect(input.value).toBe('');
 
     demo.act.reply('I am listening to you.');
-    await new Promise((r) => setTimeout(r, 50));
-    await settle();
-    expect(root.querySelector('.msg.in')!.textContent).toBe('I am listening to you.');
+    await vi.waitFor(() => expect(root.querySelector('.msg.in')!.textContent).toBe('I am listening to you.'));
     expect(word()).toBe('LISTENING');
     expect(demo.state.events.map((e) => e.name)).toEqual(expect.arrayContaining(['compose_start', 'message_sent']));
   });

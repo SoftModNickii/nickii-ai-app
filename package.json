@@ -15,7 +15,7 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test && npm run test:deno && npm run build",
+    "check": "npm run typecheck && npm run test && npm run test:deno && npm run test:dataset && npm run build",
     "test:deno": "cd supabase/functions && deno check send_push/index.ts && deno test --allow-net --allow-env --allow-read send_push/web_push_deno_test.ts",
     "demo:participant": "npm run demo -w apps/participant",
     "test:dataset": "python3 -m unittest discover -s dataset/tests"
