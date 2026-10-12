@@ -1,7 +1,14 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/shared" },
-    { "path": "supabase/tests" }
+    {
+      "path": "packages/shared"
+    },
+    {
+      "path": "supabase/tests"
+    },
+    {
+      "path": "apps/participant"
+    }
   ]
 }
