@@ -23,21 +23,58 @@ export interface Message {
   created_at: string;
 }
 
+export type LineStatus = 'invited' | 'waiting' | 'live' | 'done' | 'left';
+
 export interface LineEntry {
   id: string;
   participant_id: string;
-  status: 'invited' | 'waiting' | 'live' | 'done' | 'left';
-  position: number | null;
+  status: LineStatus;       // at most one 'live' entry at a time (database enforces it)
   invited_t_ms: number;
+  arrived_t_ms: number | null;
   started_t_ms: number | null;
   ended_t_ms: number | null;
 }
 
+/** Result of the `my_line_position()` database function (participant side). */
+export interface LinePosition {
+  status: LineStatus;
+  line_position: number;      // 1 = next; 0 = in direct transmission now
+  estimated_wait_ms: number;
+}
+
+/** Single row (id = 1). Who is in direct transmission lives in line_entries (status 'live'). */
 export interface OperatorStatus {
   state: OperatorState;
   status_word: string;     // shown to participants: LISTENING / THINKING / …
-  live_participant_id: string | null;
   updated_t_ms: number;
+}
+
+export interface PushSubscriptionRow {
+  id: string;
+  participant_id: string;
+  kind: 'webpush' | 'apns' | 'fcm';
+  endpoint: string;
+  p256dh: string | null;
+  auth: string | null;
+  created_at: string;
+  last_success_at: string | null;
+}
+
+/** One row per participant from the `inbox` view (console only). */
+export interface InboxRow {
+  participant_id: string;
+  pseudonym: string;
+  last_in_t_ms: number | null;
+  last_in_body: string | null;
+  last_out_t_ms: number | null;
+  waiting_since_t_ms: number | null;   // null = Nickii answered last
+}
+
+export interface ClockSyncRow {
+  device: string;
+  offset_ms: number;
+  round_trip_ms: number;
+  t_ms: number;
 }
 
 /** Event names written to operator_events / participant_events. Keep the list closed so the dataset stays clean. */
@@ -55,3 +92,17 @@ export const PARTICIPANT_EVENTS = [
   'line_joined', 'line_left', 'transmission_seen', 'compose_start', 'message_sent',
 ] as const;
 export type ParticipantEventName = (typeof PARTICIPANT_EVENTS)[number];
+
+export interface OperatorEvent {
+  name: OperatorEventName;
+  participant_id?: string | null;
+  data?: Record<string, unknown>;
+  t_ms: number;            // when it happened, server clock
+}
+
+export interface ParticipantEvent {
+  participant_id: string;
+  name: ParticipantEventName;
+  data?: Record<string, unknown>;
+  t_ms: number;
+}
