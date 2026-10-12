@@ -100,5 +100,6 @@ describe('faceHealth', () => {
     expect(faceHealth({ t_ms: 0, data: { ...ok, pending_chunks: 5 } }, 1).message).toContain('5 chunks');
     expect(faceHealth({ t_ms: 0, data: { ...ok, fps: 9 } }, 1).message).toContain('9 fps');
     expect(faceHealth({ t_ms: 0, data: { ...ok, face_present: false } }, 1).message).toContain('no face');
+    expect(faceHealth({ t_ms: 0, data: { ...ok, tab_visible: false } }, 1).message).toContain('hidden');
   });
 });

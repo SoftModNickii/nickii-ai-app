@@ -11,3 +11,4 @@ dataset/output/
 *.mov
 .tsbuild/
 *.tsbuildinfo
+apps/face-capture/public/mediapipe/

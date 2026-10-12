@@ -12,6 +12,9 @@
     },
     {
       "path": "apps/console"
+    },
+    {
+      "path": "apps/face-capture"
     }
   ]
 }

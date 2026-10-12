@@ -1,0 +1,11 @@
+#app { min-height: 100%; }
+.small { font-size: 12px; }
+.login { max-width: 320px; margin: 18vh auto 0; display: grid; gap: 12px; padding: 0 20px; }
+input { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px 12px; font-size: 16px; }
+.error { color: var(--danger); }
+.capture { max-width: 720px; margin: 0 auto; padding: 24px; display: grid; gap: 16px; }
+.preview { width: 100%; max-width: 480px; border-radius: var(--radius-card); background: var(--surface-soft); transform: scaleX(-1); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.info { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+.info dt { color: var(--quiet); }
+.info dd { margin: 0; font-variant-numeric: tabular-nums; }

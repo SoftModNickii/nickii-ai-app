@@ -12,6 +12,8 @@ export interface HeartbeatData {
   last_upload_t_ms?: number | null;
   pending_chunks?: number;
   camera_ok?: boolean;
+  /** false when the face-capture window is hidden or minimised (the browser then slows it down). */
+  tab_visible?: boolean;
 }
 
 export type FaceHealthLevel = 'ok' | 'warning' | 'down' | 'never';
@@ -29,6 +31,7 @@ export function faceHealth(last: { t_ms: number; data: HeartbeatData } | null, n
   }
   const d = last.data;
   if (d.camera_ok === false) return { level: 'down', message: 'Webcam not delivering images.' };
+  if (d.tab_visible === false) return { level: 'warning', message: 'Face-capture window is hidden: bring it to the front.' };
   if ((d.pending_chunks ?? 0) > 3) {
     return { level: 'warning', message: `${d.pending_chunks} chunks waiting to upload (saved on the Mac).` };
   }

@@ -26,6 +26,7 @@
     "@electric-sql/pglite": "^0.5.9",
     "@types/node": "^22.10.0",
     "deno": "^2.9.6",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",

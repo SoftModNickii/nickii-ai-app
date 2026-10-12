@@ -24,5 +24,5 @@ export type BlendshapeName = (typeof BLENDSHAPE_NAMES)[number];
 /** Column names of the 4x4 facial transformation matrix (head pose), row-major. */
 export const MATRIX_COLUMNS = Array.from({ length: 16 }, (_, i) => `m${Math.floor(i / 4)}${i % 4}`);
 
-/** Header of one face CSV chunk. */
-export const FACE_CSV_HEADER = ['t_ms', 'face_present', ...BLENDSHAPE_NAMES, ...MATRIX_COLUMNS];
+/** Header of one face CSV chunk (docs/dataset.md "Face stream format"). */
+export const FACE_CSV_HEADER = ['t_ms', 'face_present', ...BLENDSHAPE_NAMES, ...MATRIX_COLUMNS, 'fps_measured'];
