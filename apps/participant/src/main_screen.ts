@@ -1,8 +1,7 @@
 // The Ghost UI: CHAT · LINE · LIVE bar, floating head, one status word, one sentence, and the thread.
 
-import { streamText, type LinePosition, type Message, type Mode, type StreamOptions } from '@nickii/shared';
+import { h, streamText, type LinePosition, type Message, type Mode, type StreamOptions } from '@nickii/shared';
 import { LABELS, LINE_LABELS, SENTENCES, type Lang } from './copy';
-import { h } from './dom';
 import { InputMethodTracker, type InputMethod } from './input_method';
 import { availableModes } from './mode';
 import type { StatusLine } from './status_line';

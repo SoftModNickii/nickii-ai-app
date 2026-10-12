@@ -1,9 +1,8 @@
 // Screens shown before the chat opens: install guide, open-in-browser, agreement, activate, blocked.
 
-import type { Platform } from '@nickii/shared';
+import { h, type Platform } from '@nickii/shared';
 import { AGREEMENT } from './agreement';
 import { GATE, IOS_STEPS, LABELS, type Lang, type Text } from './copy';
-import { h } from './dom';
 import { ghostHead } from './ghost_head';
 
 const t = (text: Text, lang: Lang) => text[lang];

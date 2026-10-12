@@ -2,13 +2,12 @@
 // the app), then the Ghost UI. Talks only to `Platform` (device) and `Backend` (server).
 
 import {
-  gateStep, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
+  clear, gateStep, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
   type Mode, type OperatorStatus, type Platform, type StreamOptions,
 } from '@nickii/shared';
 import { AGREEMENT_VERSION } from './agreement';
 import type { Backend, Unsubscribe } from './backend';
 import { GATE, type Lang } from './copy';
-import { clear } from './dom';
 import { EventLog } from './event_log';
 import {
   activateScreen, agreementScreen, installScreen, messageScreen, openInBrowserScreen,
