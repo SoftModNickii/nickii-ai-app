@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { detectDevice, detectInAppBrowser, detectStandalone, memoryStorage, urlBase64ToUint8Array } from './platform';
+import {
+  detectDevice, detectInAppBrowser, detectStandalone, memoryStorage, parseNotificationOpen,
+  stripNotificationParams, urlBase64ToUint8Array,
+} from './platform';
 
 const UA = {
   iphoneSafari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Mobile/15E148 Safari/604.1',
@@ -79,5 +82,22 @@ describe('memoryStorage', () => {
     expect(s.get('a')).toBe('1');
     s.remove('a');
     expect(s.get('a')).toBeNull();
+  });
+});
+
+describe('notification launch marker', () => {
+  it('reads kind and mode from a notification link', () => {
+    expect(parseNotificationOpen('https://app.example/?mode=line&from=push&kind=line_invite'))
+      .toEqual({ kind: 'line_invite', mode: 'line' });
+  });
+
+  it('returns null for a normal launch', () => {
+    expect(parseNotificationOpen('https://app.example/')).toBeNull();
+    expect(parseNotificationOpen('/?mode=line')).toBeNull();
+  });
+
+  it('removes the marker but keeps the mode', () => {
+    expect(stripNotificationParams('https://app.example/?mode=line&from=push&kind=line_invite'))
+      .toBe('https://app.example/?mode=line');
   });
 });

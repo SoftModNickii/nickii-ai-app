@@ -32,6 +32,42 @@ export interface Platform {
   currentPushSubscription(): Promise<PushSubscriptionInfo | null>;
   setBadge(count: number): void;
   storage: KeyValueStore;
+
+  /** Call once at startup, before anything else (web: registers the service worker). */
+  start(serviceWorkerUrl?: string): Promise<void>;
+  /** Android/desktop Chrome offers its own install dialog; iOS never does. */
+  installPromptAvailable(): boolean;
+  onInstallPromptAvailable(cb: () => void): void;
+  /** Must be called from a direct user tap. */
+  promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'>;
+  /** Did this launch come from tapping a notification? Reads and then removes the marker from the address. */
+  takeLaunchFromNotification(): NotificationOpen | null;
+  /** The app was already open and a notification was tapped. Returns an unsubscribe function. */
+  onNotificationOpened(cb: (open: NotificationOpen) => void): () => void;
+}
+
+export interface NotificationOpen {
+  kind: string | null;
+  mode: string | null;
+}
+
+/** Marker added to every notification link (see supabase/functions/send_push/push_logic.ts). */
+export const FROM_PUSH_PARAM = 'from';
+export const FROM_PUSH_VALUE = 'push';
+
+/** Reads ?from=push&kind=…&mode=… from a URL. Returns null if it was not a notification launch. */
+export function parseNotificationOpen(url: string): NotificationOpen | null {
+  const u = new URL(url, 'https://x.invalid');
+  if (u.searchParams.get(FROM_PUSH_PARAM) !== FROM_PUSH_VALUE) return null;
+  return { kind: u.searchParams.get('kind'), mode: u.searchParams.get('mode') };
+}
+
+/** The same URL without the notification marker (so a reload does not count again). */
+export function stripNotificationParams(url: string): string {
+  const u = new URL(url);
+  u.searchParams.delete(FROM_PUSH_PARAM);
+  u.searchParams.delete('kind');
+  return u.toString();
 }
 
 export function detectDevice(userAgent: string, maxTouchPoints = 0): 'ios' | 'android' | 'desktop' {
@@ -61,7 +97,7 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(b64);
-  const out = new Uint8Array(raw.length);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
@@ -96,6 +132,18 @@ function toInfo(sub: PushSubscription | null): PushSubscriptionInfo | null {
   };
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let deferredInstall: BeforeInstallPromptEvent | null = null;
+const installListeners: Array<() => void> = [];
+
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p, new Promise<T>((r) => setTimeout(() => r(fallback), ms))]);
+}
+
 export const webPlatform: Platform = {
   name: 'web',
 
@@ -123,7 +171,9 @@ export const webPlatform: Platform = {
     if (this.pushPermission() === 'unsupported') return null;
     const result = await Notification.requestPermission();
     if (result !== 'granted') return null;
-    const reg = await navigator.serviceWorker.ready;
+    // `ready` never resolves if the service worker failed to register; do not hang the Activate button.
+    const reg = await withTimeout(navigator.serviceWorker.ready, 10_000, null);
+    if (!reg) return null;
     const existing = await reg.pushManager.getSubscription();
     if (existing) return toInfo(existing);
     const sub = await reg.pushManager.subscribe({
@@ -146,6 +196,57 @@ export const webPlatform: Platform = {
   },
 
   storage: webStorage(),
+
+  async start(serviceWorkerUrl = '/sw.js') {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); // keep it for our own Install button
+      deferredInstall = e as BeforeInstallPromptEvent;
+      installListeners.forEach((cb) => cb());
+    });
+    window.addEventListener('appinstalled', () => { deferredInstall = null; });
+    if ('serviceWorker' in navigator) {
+      try {
+        await navigator.serviceWorker.register(serviceWorkerUrl, { scope: '/' });
+      } catch (err) {
+        console.error('service worker registration failed', err);
+      }
+    }
+  },
+
+  installPromptAvailable() {
+    return deferredInstall !== null;
+  },
+
+  onInstallPromptAvailable(cb) {
+    installListeners.push(cb);
+  },
+
+  async promptInstall() {
+    const e = deferredInstall;
+    if (!e) return 'unavailable';
+    deferredInstall = null; // can only be used once
+    await e.prompt();
+    return (await e.userChoice).outcome;
+  },
+
+  takeLaunchFromNotification() {
+    const open = parseNotificationOpen(location.href);
+    if (open) history.replaceState(history.state, '', stripNotificationParams(location.href));
+    return open;
+  },
+
+  onNotificationOpened(cb) {
+    if (!('serviceWorker' in navigator)) return () => {};
+    const handler = (e: MessageEvent) => {
+      const d = e.data as { type?: string; url?: string } | null;
+      if (d?.type === 'notification_opened' && d.url) {
+        const open = parseNotificationOpen(d.url);
+        if (open) cb(open);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  },
 };
 
 /** The one place that picks the platform. A native build adds its own branch here. */

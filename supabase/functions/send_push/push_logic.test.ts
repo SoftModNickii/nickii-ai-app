@@ -50,13 +50,13 @@ describe('buildPayload', () => {
   it('builds a Declarative Web Push payload', () => {
     const p = buildPayload({ to: ['p1'], kind: 'reply', body: 'Hello you' }, app);
     expect(p.web_push).toBe(8030);
-    expect(p.notification).toMatchObject({ title: 'Nickii AI', body: 'Hello you', navigate: 'https://nickii.example/' });
+    expect(p.notification).toMatchObject({ title: 'Nickii AI', body: 'Hello you', navigate: 'https://nickii.example/?from=push&kind=reply' });
     expect(p.mutable).toBe(true);
   });
 
   it('line invites open the app in the holding line', () => {
     const p = buildPayload({ to: ['p1'], kind: 'line_invite', body: 'Come in' }, app);
-    expect(p.notification.navigate).toBe('https://nickii.example/?mode=line');
+    expect(p.notification.navigate).toBe('https://nickii.example/?mode=line&from=push&kind=line_invite');
   });
 
   it('stays below the 4 kB web push limit with a long reply', () => {

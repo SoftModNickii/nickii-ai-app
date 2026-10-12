@@ -56,6 +56,12 @@ function fakePlatform(over: Partial<Platform> = {}): Platform {
     currentPushSubscription: async () => ({ kind: 'webpush', endpoint: 'https://push.example/1' }),
     setBadge: () => {},
     storage: { get: () => null, set: () => {}, remove: () => {} },
+    start: async () => {},
+    installPromptAvailable: () => false,
+    onInstallPromptAvailable: () => {},
+    promptInstall: async () => 'unavailable',
+    takeLaunchFromNotification: () => null,
+    onNotificationOpened: () => () => {},
     ...over,
   };
 }

@@ -71,12 +71,16 @@ export function truncateBody(text: string, max = MAX_BODY_CHARS): string {
 
 export function buildPayload(req: PushRequest, appUrl: string): DeclarativePayload {
   const path = req.path ?? (req.kind === 'line_invite' ? '/?mode=line' : '/');
+  const navigate = new URL(path, appUrl);
+  // The app reads this marker to log `push_opened` (packages/shared/src/platform.ts parseNotificationOpen).
+  navigate.searchParams.set('from', 'push');
+  navigate.searchParams.set('kind', req.kind);
   return {
     web_push: DECLARATIVE_MAGIC,
     notification: {
       title: req.title ?? 'Nickii AI',
       body: truncateBody(req.body),
-      navigate: new URL(path, appUrl).toString(),
+      navigate: navigate.toString(),
       lang: 'de-DE',
       silent: false,
       // Same tag = a newer reply replaces the older notification instead of stacking.
