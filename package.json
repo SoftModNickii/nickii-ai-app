@@ -1,0 +1,36 @@
+{
+  "name": "nickii-ai-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Nickii AI: app for a 7-day durational performance",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:participant": "npm run dev -w apps/participant",
+    "dev:console": "npm run dev -w apps/console",
+    "dev:face": "npm run dev -w apps/face-capture",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test && npm run test:deno && npm run test:dataset && npm run build",
+    "test:deno": "cd supabase/functions && deno check send_push/index.ts && deno test --allow-net --allow-env --allow-read send_push/web_push_deno_test.ts",
+    "demo:participant": "npm run demo -w apps/participant",
+    "test:dataset": "python3 -m unittest discover -s dataset/tests"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@types/node": "^22.10.0",
+    "deno": "^2.9.6",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
