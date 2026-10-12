@@ -1,9 +1,8 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/shared" },
-    { "path": "apps/participant" },
-    { "path": "apps/console" },
-    { "path": "apps/face-capture" }
+    {
+      "path": "packages/shared"
+    }
   ]
 }

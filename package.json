@@ -12,7 +12,7 @@
     "dev:participant": "npm run dev -w apps/participant",
     "dev:console": "npm run dev -w apps/console",
     "dev:face": "npm run dev -w apps/face-capture",
-    "build": "npm run build -w apps/participant -w apps/console -w apps/face-capture",
+    "build": "npm run build --workspaces --if-present",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test && npm run build"

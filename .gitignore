@@ -9,3 +9,5 @@ dataset/output/
 *.parquet
 *.mp4
 *.mov
+.tsbuild/
+*.tsbuildinfo
