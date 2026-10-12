@@ -15,7 +15,8 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test && npm run build"
+    "check": "npm run typecheck && npm run test && npm run test:deno && npm run build",
+    "test:deno": "cd supabase/functions && deno check send_push/index.ts && deno test --allow-net --allow-env --allow-read send_push/web_push_deno_test.ts"
   },
   "engines": {
     "node": ">=20"
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.9",
     "@types/node": "^22.10.0",
+    "deno": "^2.9.6",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
