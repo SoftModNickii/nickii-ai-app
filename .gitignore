@@ -12,3 +12,5 @@ dataset/output/
 .tsbuild/
 *.tsbuildinfo
 apps/face-capture/public/mediapipe/
+.venv/
+__pycache__/
