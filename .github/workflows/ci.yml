@@ -1,0 +1,39 @@
+# Runs on every push and pull request: typecheck, tests (apps, schema, push function, dataset), build.
+# Uses only free GitHub-hosted runners and no secrets.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: dataset/requirements.txt
+
+      - run: npm ci
+      - run: pip install -r dataset/requirements.txt
+
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests (apps, shared, schema on PGlite, push logic)
+        run: npm test
+      - name: Push function under Deno
+        run: npm run test:deno
+      - name: Dataset export
+        run: npm run test:dataset
+      - name: Build
+        run: npm run build
