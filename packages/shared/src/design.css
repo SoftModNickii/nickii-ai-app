@@ -1,0 +1,87 @@
+/* Nickii AI design tokens: option 3 "Ghost". Change values here, not in the apps. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap');
+
+:root {
+  --bg: #FCF5F6;
+  --bg-live: #FBEEF1;
+  --surface: #FFFFFF;
+  --surface-soft: #F1E3E5;
+  --line: #F0DDE2;
+  --ink: #2A2025;
+  --ink-soft: #3A2D33;
+  --quiet: #6E6168;
+  --accent: #D9668A;
+  --accent-deep: #B23E66;
+  --danger: #B3261E;
+
+  --font: 'Archivo', system-ui, sans-serif;
+  --wide: 125%;
+
+  --radius-pill: 999px;
+  --radius-card: 22px;
+  --radius-input: 26px;
+  --tap: 44px; /* minimum touch target */
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button, input, textarea { font: inherit; color: inherit; }
+
+.wordmark {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  font-stretch: var(--wide);
+}
+
+.status {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  font-stretch: 120%;
+  color: var(--accent-deep);
+  text-transform: uppercase;
+}
+
+.quiet { color: var(--quiet); }
+
+.btn {
+  min-height: var(--tap);
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn.secondary { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+@keyframes ghost-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes ghost-flicker { 0%, 46% { opacity: .9; } 50% { opacity: .55; } 54%, 100% { opacity: .95; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

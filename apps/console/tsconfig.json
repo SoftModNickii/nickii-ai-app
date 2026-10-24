@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../.tsbuild/console",
+    "rootDir": "."
+  },
+  "include": ["src", "vite.config.ts"],
+  "references": [{ "path": "../../packages/shared" }]
+}

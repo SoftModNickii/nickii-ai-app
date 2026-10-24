@@ -21,8 +21,8 @@ Participants' voices are never recorded: voice input is turned into text on thei
 
 ## Face stream format
 - MediaPipe Face Landmarker (web) with `outputFaceBlendshapes: true` and `outputFacialTransformationMatrixes: true`. Blendshape names are the 52 ARKit-compatible categories (browDownLeft … mouthSmileRight …, plus `_neutral`).
-- Written by `apps/face-capture` to 10-minute chunk files: `face_YYYY-MM-DD_HH-MM.parquet` (or `.csv.gz` if Parquet is awkward in the browser — then convert in `dataset/export_scripts`).
-- Columns: `t_ms`, `face_present`, 52 blendshape columns (float32), 16 matrix columns `m00…m33` (float32), `fps_measured`.
+- Written by `apps/face-capture` to 10-minute chunk files: `face_YYYY-MM-DD_HH-MM-SS.csv.gz` (UTC, named after the first frame; gzipped CSV because Parquet is awkward in the browser — `dataset/export_scripts/export_dataset.py` converts to Parquet). Chunks end at every 10-minute mark; a restart mid-window starts a new file instead of overwriting.
+- Columns: `t_ms`, `face_present`, 52 blendshape columns (float32), 16 matrix columns `m00…m33` (float32, row-major: `m03`, `m13`, `m23` = head position), `fps_measured`.
 - Do NOT stream face frames into Postgres/Realtime. Save locally first (survives internet drops), upload finished chunks to Supabase Storage bucket `face_chunks` in the background.
 - Rough size (estimate, not measured): 30 fps × 604,800 s ≈ 18 million frames × ~280 bytes ≈ 5 GB raw for 7 days. Fine on the 4 TB drive.
 
@@ -35,7 +35,7 @@ At export, each face frame gets: current mode (chat / line / live / away), which
 - Push subscription endpoints and device info are operational only and are dropped at export.
 
 ## Export (after the performance)
-`dataset/export_scripts/export_dataset.py` produces:
+`dataset/export_scripts/dump_tables.sh` dumps the tables to CSV, then `dataset/export_scripts/export_dataset.py` produces:
 ```
 nickii_ai_dataset_<dates>/
   README.md            what it is, how it was recorded, consent, columns
@@ -43,7 +43,8 @@ nickii_ai_dataset_<dates>/
   operator_events.parquet
   participant_events.parquet
   face/                one parquet per day
-  face_context.parquet face frames joined with context labels (or a script to make it)
+  face_context/        face frames joined with context labels, one parquet per day
+  samples/             first 200 rows of each table as CSV
   clock_sync.csv
 ```
 Formats: Parquet as main, plus a small CSV sample of each table for quick viewing.

@@ -9,3 +9,8 @@ dataset/output/
 *.parquet
 *.mp4
 *.mov
+.tsbuild/
+*.tsbuildinfo
+apps/face-capture/public/mediapipe/
+.venv/
+__pycache__/
