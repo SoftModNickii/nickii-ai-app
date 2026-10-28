@@ -19,7 +19,8 @@ The dataset test needs `pip install -r dataset/requirements.txt` first (step 8).
 2. **Authentication → Sign In / Providers → Anonymous sign-ins: on.** Participants get an anonymous account
    inside the installed app (https://supabase.com/docs/guides/auth/auth-anonymous).
    Email sign-in stays on for Nickii's own login. Turn off "Confirm email" or confirm her address once.
-3. **Database:** open **SQL Editor**, paste the whole of `supabase/migrations/0001_schema.sql`, run it once.
+3. **Database:** open **SQL Editor**, paste the whole of `supabase/migrations/0001_schema.sql`, run it once;
+   then the same with `0002_presence_and_stats.sql` (every file in `supabase/migrations`, in name order).
    (With the Supabase CLI instead: `npx supabase link --project-ref <ref>` then `npx supabase db push`.)
 4. **Nickii's operator account:** Authentication → Users → Add user (her email + a strong password).
    Then in SQL Editor (replace the email):
@@ -65,6 +66,16 @@ The CLI asks you to log in once (`npx supabase login`).
 Phones cannot install from `localhost`. To try on the iPhone, deploy (step 7).
 
 ## 7. Hosting (static, free tiers)
+
+**Current choice: GitHub Pages**, set up by `.github/workflows/pages.yml`. Every push to `foundation` or `main`
+publishes both apps:
+- participant app: https://softmodnickii.github.io/nickii-ai-app/
+- console: https://softmodnickii.github.io/nickii-ai-app/console/
+
+The public values (Supabase URL, anon key, VAPID public key) are in that workflow file. The push function's
+`APP_URL` secret must match the participant address. A custom domain can be added later in the repository's
+Settings → Pages. Netlify is the alternative below (`netlify.toml` files are ready).
+
 Each app builds to plain files: `npm run build` → `apps/<app>/dist`.
 - **Participant app** needs its own address with HTTPS at the root (`/`), e.g. a Netlify / Cloudflare Pages /
   Vercel site with build command `npm run build -w apps/participant` and output `apps/participant/dist`.

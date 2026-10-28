@@ -2,7 +2,8 @@
 // push to one/all, Live/Away, holding line, face-capture health. Desktop and phone layouts.
 
 import {
-  clear, h, ServerClock, type InboxRow, type LineEntry, type Message, type OperatorEventName, type OperatorStatus,
+  clear, h, ServerClock, type ConsoleStats, type InboxRow, type LineEntry, type Message, type OperatorEventName,
+  type OperatorStatus,
 } from '@nickii/shared';
 import { ComposeTiming } from './compose_timing';
 import type { ConsoleBackend, OperatorEventInput, Unsubscribe } from './console_backend';
@@ -19,6 +20,10 @@ export interface ConsoleOptions {
   now?: () => number;
   /** Re-sync the clock this often (docs/dataset.md: every 10 minutes). */
   clockSyncMs?: number;
+  /** Refresh the numbers strip this often. */
+  statsMs?: number;
+  /** Decides when "today" starts in the numbers. */
+  timezone?: string;
 }
 
 export class ConsoleApp {
@@ -30,6 +35,8 @@ export class ConsoleApp {
   private status: OperatorStatus = { state: 'away', status_word: 'LISTENING', updated_t_ms: 0 };
   private line: LineEntry[] = [];
   private heartbeat: { t_ms: number; data: HeartbeatData } | null = null;
+  private stats: ConsoleStats | null = null;
+  private online = new Set<string>();
   private subs: Unsubscribe[] = [];
   private timers: ReturnType<typeof setInterval>[] = [];
   private failedEvents: OperatorEventInput[] = [];
@@ -88,6 +95,7 @@ export class ConsoleApp {
     [this.inbox, this.status, this.line, this.heartbeat] = await Promise.all([
       this.b.loadInbox(), this.b.loadStatus(), this.b.loadLine(), this.b.lastHeartbeat(),
     ]);
+    await this.refreshStats();
     this.subs.push(
       this.b.onMessage((m) => void this.onMessage(m)),
       this.b.onLineChange(() => void this.reloadLine()),
@@ -96,6 +104,7 @@ export class ConsoleApp {
     this.timers.push(
       setInterval(() => { this.renderInbox(); this.renderHealth(); }, 1000),
       setInterval(() => void this.syncClock(), this.o.clockSyncMs ?? 10 * 60_000),
+      setInterval(() => void this.refreshStats(), this.o.statsMs ?? 10_000),
     );
     this.renderAll();
   }
@@ -105,6 +114,21 @@ export class ConsoleApp {
     this.timers.forEach(clearInterval);
     this.subs = [];
     this.timers = [];
+  }
+
+  private get timezone(): string {
+    return this.o.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'Europe/Vienna';
+  }
+
+  /** Numbers strip + who is online. Keeps the old numbers when the connection is bad. */
+  private async refreshStats() {
+    try {
+      [this.stats, this.online] = await Promise.all([this.b.loadStats(this.timezone), this.b.loadOnline()]);
+    } catch {
+      return;
+    }
+    this.renderStats();
+    this.renderInbox();
   }
 
   private async syncClock() {
@@ -123,6 +147,7 @@ export class ConsoleApp {
     e.word = word;
     e.waiting = h('span', { class: 'pill' });
     e.health = h('span', { class: 'pill' });
+    e.stats = h('div', { class: 'stats', attrs: { 'aria-label': 'Numbers' } });
     e.inbox = h('ul', { class: 'inbox' });
     e.threadHead = h('div', { class: 'thread-head' });
     e.messages = h('div', { class: 'messages' });
@@ -159,6 +184,7 @@ export class ConsoleApp {
         h('span', { class: 'wordmark' }, 'NICKII AI'), e.liveBtn, word,
         h('datalist', { id: 'status-words' }, ...STATUS_WORD_CHOICES.map((w) => h('option', { value: w }))),
         e.waiting, e.health),
+      e.stats,
       nav,
       h('section', { class: 'col col-inbox' }, h('h2', {}, 'Inbox'), e.inbox),
       h('section', { class: 'col col-thread' }, e.threadHead, e.messages, e.composer, e.notice),
@@ -177,6 +203,7 @@ export class ConsoleApp {
 
   private renderAll() {
     this.renderStatus();
+    this.renderStats();
     this.renderInbox();
     this.renderThread();
     this.renderLine();
@@ -191,6 +218,28 @@ export class ConsoleApp {
     if (document.activeElement !== this.el.word) (this.el.word as HTMLInputElement).value = this.status.status_word;
   }
 
+  private renderStats() {
+    if (!this.el.stats) return;
+    const s = this.stats;
+    const tile = (label: string, value: number | string, hint = '') =>
+      h('div', { class: 'stat', title: hint }, h('span', { class: 'stat-value' }, String(value)), h('span', { class: 'stat-label' }, label));
+    if (!s) {
+      this.el.stats.replaceChildren(h('p', { class: 'quiet small' }, 'Numbers not loaded yet.'));
+      return;
+    }
+    this.el.stats.replaceChildren(
+      tile('installed', s.installed, 'accepted the agreement inside the installed app'),
+      tile('reachable', s.with_push, 'have working notifications'),
+      tile('online now', s.online_now, 'app open on the screen in the last 90 s'),
+      tile('waiting', s.waiting, 'wrote and have no answer yet'),
+      tile('in line', s.in_line + s.live_now, s.live_now ? 'one in direct transmission' : ''),
+      tile('new today', s.installed_today),
+      tile('in today', s.messages_in_today, 'messages from participants today'),
+      tile('out today', s.messages_out_today, 'your replies today'),
+      tile('pushes today', s.pushes_today),
+    );
+  }
+
   private renderInbox() {
     if (!this.el.inbox) return;
     const now = this.nowServer();
@@ -198,8 +247,9 @@ export class ConsoleApp {
     this.el.waiting!.textContent = `${waitingCount(rows)} waiting`;
     this.el.inbox.replaceChildren(...rows.map((r) => {
       const waiting = r.waiting_since_t_ms !== null;
-      const li = h('li', { class: `${waiting ? 'waiting' : ''} ${r.participant_id === this.selected ? 'selected' : ''}` },
-        h('span', { class: 'who' }, r.pseudonym),
+      const online = this.online.has(r.participant_id);
+      const li = h('li', { class: `${waiting ? 'waiting' : ''} ${r.participant_id === this.selected ? 'selected' : ''} ${online ? 'online' : ''}` },
+        h('span', { class: 'who' }, r.pseudonym, online ? h('span', { class: 'online-dot', title: 'online now' }) : null),
         h('span', { class: 'when' }, waiting ? formatWait(now - r.waiting_since_t_ms!) : ''),
         h('span', { class: 'what' }, r.last_in_body ?? ''));
       li.onclick = () => void this.openThread(r.participant_id);

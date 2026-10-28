@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@nickii/shared": "*",
-    "@supabase/supabase-js": "^2.47.10"
+    "@supabase/supabase-js": "^2.47.10",
+    "three": "^0.170.0"
   }
 }

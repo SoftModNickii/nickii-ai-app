@@ -3,14 +3,14 @@
 import { h, type Platform } from '@nickii/shared';
 import { AGREEMENT } from './agreement';
 import { GATE, IOS_STEPS, LABELS, type Lang, type Text } from './copy';
-import { ghostHead } from './ghost_head';
+import { ghostHeadSvg } from './ghost_head';
 
 const t = (text: Text, lang: Lang) => text[lang];
 
 function frame(...children: (Node | null)[]): HTMLElement {
   return h('section', { class: 'gate' },
     h('div', { class: 'wordmark' }, LABELS.wordmark),
-    ghostHead('ghost-small'),
+    ghostHeadSvg('ghost-small'),
     ...children);
 }
 
@@ -18,14 +18,14 @@ export function openInBrowserScreen(lang: Lang): HTMLElement {
   const copyBtn = h('button', { class: 'btn secondary', type: 'button' }, LABELS.copyLink);
   copyBtn.onclick = async () => {
     try {
-      await navigator.clipboard.writeText(location.origin + '/');
+      await navigator.clipboard.writeText(new URL(import.meta.env.BASE_URL, location.href).href);
       copyBtn.textContent = LABELS.copied;
     } catch { /* clipboard blocked: the address is shown below anyway */ }
   };
   return frame(
     h('h1', {}, t(GATE.openInBrowserTitle, lang)),
     h('p', { class: 'quiet' }, t(GATE.openInBrowserBody, lang)),
-    h('p', { class: 'address' }, location.host),
+    h('p', { class: 'address' }, location.host + (import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL)),
     copyBtn,
   );
 }

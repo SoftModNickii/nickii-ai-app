@@ -33,7 +33,7 @@ export interface Platform {
   setBadge(count: number): void;
   storage: KeyValueStore;
 
-  /** Call once at startup, before anything else (web: registers the service worker). */
+  /** Call once at startup, before anything else (web: registers the service worker, relative to the page). */
   start(serviceWorkerUrl?: string): Promise<void>;
   /** Android/desktop Chrome offers its own install dialog; iOS never does. */
   installPromptAvailable(): boolean;
@@ -197,7 +197,7 @@ export const webPlatform: Platform = {
 
   storage: webStorage(),
 
-  async start(serviceWorkerUrl = '/sw.js') {
+  async start(serviceWorkerUrl = 'sw.js') {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault(); // keep it for our own Install button
       deferredInstall = e as BeforeInstallPromptEvent;
@@ -206,7 +206,10 @@ export const webPlatform: Platform = {
     window.addEventListener('appinstalled', () => { deferredInstall = null; });
     if ('serviceWorker' in navigator) {
       try {
-        await navigator.serviceWorker.register(serviceWorkerUrl, { scope: '/' });
+        // Scope = the folder the app lives in ('/' on its own domain, '/nickii-ai-app/' on GitHub Pages).
+        const url = new URL(serviceWorkerUrl, document.baseURI);
+        const scope = url.pathname.replace(/[^/]*$/, '');
+        await navigator.serviceWorker.register(url.href, { scope });
       } catch (err) {
         console.error('service worker registration failed', err);
       }

@@ -113,6 +113,10 @@ export function supabaseBackend(client: SupabaseClient): Backend {
       check(await client.from('participant_events').insert(events));
     },
 
+    async reportPresence(visible, mode, platform) {
+      check(await client.rpc('report_presence', { p_visible: visible, p_mode: mode, p_platform: platform }));
+    },
+
     onConnection(cb) {
       // Browser online/offline is the most reliable signal on phones; Realtime reconnects on its own.
       const on = () => cb(true);

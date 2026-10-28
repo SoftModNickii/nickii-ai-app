@@ -28,7 +28,8 @@
 ## Data
 Tables (`supabase/migrations/0001_schema.sql`): `participants` (pseudonym, consent), `push_subscriptions`
 (operational only), `messages`, `operator_status` (one row), `line_entries`, `operator_events`,
-`participant_events`, `clock_sync`, `operators`; view `inbox`.
+`participant_events`, `clock_sync`, `operators`, `participant_presence` (who is online); view `inbox`;
+`console_stats()` for the numbers strip (installed, reachable, online now, waiting, in line, today).
 
 Who can do what (row-level security):
 - A participant (anonymous account that accepted the agreement) reads and writes **only their own thread**,

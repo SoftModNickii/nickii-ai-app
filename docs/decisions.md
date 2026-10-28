@@ -11,15 +11,16 @@ What was decided while building the foundation, and why. Things marked **Nickii 
 6. **Push encryption with the `web-push` npm library inside the Deno function, sent with Deno's own `fetch`.** web-push's built-in sender uses Node's https layer, which failed under Deno in testing; `generateRequestDetails()` + `fetch` works (tested). https://github.com/web-push-libs/web-push
 7. **Every notification link carries `?from=push&kind=…`** so `push_opened` can be logged whether Safari or the service worker opened the app.
 8. **Push to all also writes the message into every thread**, so the notification leads to something in the app. **Nickii decides** if she wants notification-only broadcasts too.
-9. **The head is the existing `assets/mask/ghost_head.svg`, inserted inline.** The file has no SVG namespace, so browsers do not show it as an image; editing it would break its content credentials (C2PA). Three.js comes with the real mask (Milestone 5).
-10. **Face chunks are gzipped CSV**, converted to Parquet at export (dataset.md allowed this). Names use the first frame's time to the second (`face_2026-10-12_10-00-00.csv.gz`) so a restart never overwrites a file.
-11. **Head-pose matrix is stored row-major** (`m03 m13 m23` = position). MediaPipe's matrix format defaults to column-major (mediapipe `matrix_data.proto`); `face_row.ts` checks the layout on the actual numbers. *Confirm with real data: m23 should be negative (cm in front of the camera).*
-12. **Face capture is local-first**: IndexedDB, optional copy into a folder (File System Access API, Chrome), upload every 30 s. Raw video is not recorded (open decision below).
-13. **"typed" / "dictated" is a guess** from key events (dictation inserts text without key presses). *Not verified on devices*; stored as `input_method`, documented as a guess in the dataset README.
-14. **Mode in face_context** is: live (transmission running) > away (Nickii set away) > line (someone waiting) > chat.
-15. **Schema tests run in PGlite** (Postgres compiled to WebAssembly, https://pglite.dev) with a small stand-in for Supabase's auth/storage schemas. They check row-level security for each role without Docker or a Supabase account. They do not test Supabase's real Auth or Realtime.
-16. **MediaPipe's WebAssembly files are served from the face-capture page itself**; the model file comes from Google's server unless `VITE_FACE_MODEL_URL` is set.
-17. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
+9. **The head is a Three.js point cloud** (`apps/participant/src/head_points.ts`, `ghost_head_3d.ts`): a generated head surface sampled along contour rings, slowly turning, floating, flickering; dimmer and slower while Nickii is away. On phones without WebGL, or with "reduce motion" on, the flat `assets/mask/ghost_head.svg` is inserted inline instead (the file has no SVG namespace, so browsers do not show it as an image; editing it would break its content credentials). The gate screens always use the flat one. Nickii's real scan replaces `head_points.ts` (Milestone 5).
+10. **Hosting settings are in the repository** (`netlify.toml` for the participant app, `apps/console/netlify.toml` for the console): the service worker is never cached, every path serves the app.
+11. **Face chunks are gzipped CSV**, converted to Parquet at export (dataset.md allowed this). Names use the first frame's time to the second (`face_2026-10-12_10-00-00.csv.gz`) so a restart never overwrites a file.
+12. **Head-pose matrix is stored row-major** (`m03 m13 m23` = position). MediaPipe's matrix format defaults to column-major (mediapipe `matrix_data.proto`); `face_row.ts` checks the layout on the actual numbers. *Confirm with real data: m23 should be negative (cm in front of the camera).*
+13. **Face capture is local-first**: IndexedDB, optional copy into a folder (File System Access API, Chrome), upload every 30 s. Raw video is not recorded (open decision below).
+14. **"typed" / "dictated" is a guess** from key events (dictation inserts text without key presses). *Not verified on devices*; stored as `input_method`, documented as a guess in the dataset README.
+15. **Mode in face_context** is: live (transmission running) > away (Nickii set away) > line (someone waiting) > chat.
+16. **Schema tests run in PGlite** (Postgres compiled to WebAssembly, https://pglite.dev) with a small stand-in for Supabase's auth/storage schemas. They check row-level security for each role without Docker or a Supabase account. They do not test Supabase's real Auth or Realtime.
+17. **MediaPipe's WebAssembly files are served from the face-capture page itself**; the model file comes from Google's server unless `VITE_FACE_MODEL_URL` is set.
+18. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
 
 ## App store path (later, if wanted)
 The apps are web apps today. To ship in the App Store / Play Store, wrap the participant app with
