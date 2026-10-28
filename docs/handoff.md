@@ -26,6 +26,14 @@ CI runs the same on GitHub (`.github/workflows/ci.yml`).
 - `dataset/`: dump script, `export_dataset.py`, test with a fake performance.
 - Docs: `architecture.md`, `setup.md`, `runbook.md`, `decisions.md` (incl. App Store path).
 
+## Live and running (28 Oct 2026)
+- Supabase project `nvvpcevgdmhnhzcfxvun` (Frankfurt, free plan): both migrations run, anonymous sign-ins on,
+  operator accounts n.schamborski@gmail.com and dy.westwick@gmail.com, `send_push` deployed with VAPID secrets.
+- GitHub Pages publishes on every push to `main`: participant app `/nickii-ai-app/`, console `/console/`,
+  face capture `/face/`. First real phone installed, wrote, was invited and put in transmission.
+- Added since the first pull request: console numbers (installed, online, waiting, …), 3D point-cloud head,
+  LIVE video from the Mac camera to the phone (WebRTC, no relay yet).
+
 ## Not verified yet (needs real devices or a real Supabase project)
 - Everything in docs/setup.md step 9: install + push + badge on real iPhones (iOS 16.4–18.3 and 18.4+)
   and Android; Declarative Web Push behaviour; the iOS install-guide wording against current Safari.

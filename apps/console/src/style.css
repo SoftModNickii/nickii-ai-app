@@ -89,3 +89,6 @@ input:focus, textarea:focus { border-color: var(--accent); }
   .panel-thread .col-thread { display: flex; }
   .panel-inbox [data-panel="inbox"], .panel-thread [data-panel="thread"], .panel-control [data-panel="control"] { color: var(--accent-deep); }
 }
+
+.cam-preview { width: 100%; max-width: 220px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 16px; background: var(--surface-soft); transform: scaleX(-1); }
+.line label { display: inline-flex; align-items: center; gap: 4px; }

@@ -18,6 +18,7 @@ export class MainScreen {
   readonly el: HTMLElement;
   private readonly tabs: Record<Mode, HTMLButtonElement>;
   private readonly headSlot: HTMLElement;
+  private readonly video: HTMLVideoElement;
   private head: GhostHead | null = null;
   private away = false;
   private readonly word: HTMLElement;
@@ -39,6 +40,7 @@ export class MainScreen {
     };
     this.tabs = { chat: tab('chat'), line: tab('line'), live: tab('live') };
     this.headSlot = h('div', { class: 'ghost-slot' });
+    this.video = h('video', { class: 'live-video', autoplay: true, playsInline: true, muted: false, hidden: true });
     void ghostHead('', headStyle).then((head) => {
       this.head = head;
       head.setAway(this.away);
@@ -69,7 +71,7 @@ export class MainScreen {
         h('div', { class: 'wordmark' }, LABELS.wordmark),
         h('nav', { class: 'modes', attrs: { role: 'tablist' } },
           this.tabs.chat, h('span', { class: 'dot' }, '·'), this.tabs.line, h('span', { class: 'dot' }, '·'), this.tabs.live)),
-      h('div', { class: 'stage' }, this.headSlot, this.word, this.sentence, this.lineInfo),
+      h('div', { class: 'stage' }, this.headSlot, this.video, this.word, this.sentence, this.lineInfo),
       this.thread,
       form);
   }
@@ -94,8 +96,17 @@ export class MainScreen {
     this.head?.setAway(away);
   }
 
+  /** Live transmission video. null = back to the head. */
+  setVideo(stream: MediaStream | null): void {
+    this.video.srcObject = stream;
+    this.video.hidden = !stream;
+    this.headSlot.hidden = Boolean(stream);
+    if (stream) void this.video.play().catch(() => {});
+  }
+
   dispose(): void {
     this.head?.dispose();
+    this.video.srcObject = null;
   }
 
   /** History: shown at once. */

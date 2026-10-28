@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  measureServerOffset, type ConsoleStats, type InboxRow, type LineEntry, type Message, type OperatorEventName,
+  measureServerOffset, supabaseLiveSignal, type ConsoleStats, type LiveSignal, type InboxRow, type LineEntry, type Message, type OperatorEventName,
   type OperatorStatus,
 } from '@nickii/shared';
 import type { HeartbeatData } from './face_health';
@@ -43,6 +43,9 @@ export interface ConsoleBackend {
   onLineChange(cb: () => void): Unsubscribe;
   invite(participantId: string): Promise<void>;
   updateLine(entryId: string, change: Partial<Pick<LineEntry, 'status' | 'started_t_ms' | 'ended_t_ms'>>): Promise<void>;
+
+  /** Signalling channel for the live video to one participant's phone. */
+  liveSignal(participantId: string): LiveSignal;
 
   logEvent(e: OperatorEventInput): Promise<void>;
   lastHeartbeat(): Promise<{ t_ms: number; data: HeartbeatData } | null>;
@@ -154,6 +157,10 @@ export function supabaseConsoleBackend(client: SupabaseClient): ConsoleBackend {
 
     async updateLine(entryId, change) {
       check(await client.from('line_entries').update(change).eq('id', entryId));
+    },
+
+    liveSignal(participantId) {
+      return supabaseLiveSignal(client, participantId);
     },
 
     async logEvent(e) {

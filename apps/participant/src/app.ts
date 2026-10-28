@@ -2,7 +2,7 @@
 // the app), then the Ghost UI. Talks only to `Platform` (device) and `Backend` (server).
 
 import {
-  clear, gateStep, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
+  clear, gateStep, LiveReceiver, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
   type Mode, type OperatorStatus, type Platform, type StreamOptions,
 } from '@nickii/shared';
 import { AGREEMENT_VERSION } from './agreement';
@@ -46,6 +46,7 @@ export class ParticipantApp {
   private subs: Unsubscribe[] = [];
   private linePoll: ReturnType<typeof setInterval> | null = null;
   private presenceTimer: ReturnType<typeof setInterval> | null = null;
+  private receiver: LiveReceiver | null = null;
   private checking: Promise<void> | null = null;
   private opened = false;
 
@@ -200,6 +201,7 @@ export class ParticipantApp {
     this.linePoll = null;
     if (this.presenceTimer) clearInterval(this.presenceTimer);
     this.presenceTimer = null;
+    void this.stopVideo();
     this.main?.dispose();
     this.main = null;
   }
@@ -259,7 +261,12 @@ export class ParticipantApp {
       this.line = await backend.loadLine().catch(() => this.line);
       this.events.log('line_joined');
     }
-    if (mode === 'live') this.events.log('transmission_seen');
+    if (mode === 'live') {
+      this.events.log('transmission_seen');
+      await this.startVideo();
+    } else {
+      await this.stopVideo();
+    }
     if (this.linePoll) clearInterval(this.linePoll);
     this.linePoll = null;
     if (mode === 'line') {
@@ -269,6 +276,22 @@ export class ParticipantApp {
         this.render();
       }, this.o.linePollMs ?? 20_000);
     }
+  }
+
+  /** Live transmission: wait for Nickii's camera on the signalling channel. */
+  private async startVideo() {
+    if (this.receiver || !this.participantId) return;
+    const receiver = new LiveReceiver(this.o.backend!.liveSignal(this.participantId));
+    this.receiver = receiver;
+    receiver.onStream((stream) => this.main?.setVideo(stream));
+    await receiver.start().catch(() => {});
+  }
+
+  private async stopVideo() {
+    const r = this.receiver;
+    this.receiver = null;
+    this.main?.setVideo(null);
+    await r?.stop();
   }
 
   private async leaveLine() {

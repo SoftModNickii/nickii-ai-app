@@ -2,7 +2,7 @@
 // (CLAUDE.md). The `act` handle lets tests (or the console of a preview) play Nickii's side.
 
 import type {
-  LinePosition, LineStatus, Message, OperatorStatus, ParticipantEvent,
+  LinePosition, LineStatus, LiveSignal, Message, OperatorStatus, ParticipantEvent, SignalMessage,
 } from '@nickii/shared';
 import type { Backend } from './backend';
 
@@ -21,12 +21,13 @@ export interface DemoHandle {
     pushSubscriptions: number;
     line: LinePosition | null;
     presence: Array<{ visible: boolean; mode: string }>;
+    signals: SignalMessage[];
   };
 }
 
 export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
   const state: DemoHandle['state'] = {
-    agreed: opts.agreed ?? false, messages: [], events: [], pushSubscriptions: 0, line: null, presence: [],
+    agreed: opts.agreed ?? false, messages: [], events: [], pushSubscriptions: 0, line: null, presence: [], signals: [],
   };
   let status: OperatorStatus = { state: 'live', status_word: 'LISTENING', updated_t_ms: Date.now() };
   const msgCbs = new Set<(m: Message) => void>();
@@ -63,6 +64,9 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
     async lineLeave() { act.setLine('left'); },
     async insertEvents(events) { state.events.push(...events); },
     async reportPresence(visible, mode) { state.presence.push({ visible, mode }); },
+    liveSignal(): LiveSignal {
+      return { async send(m) { state.signals.push(m); }, onMessage: () => () => {}, close: async () => {} };
+    },
     onConnection(cb) { cb(true); return sub(connCbs, cb); },
   };
 

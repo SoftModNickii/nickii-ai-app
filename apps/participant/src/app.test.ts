@@ -226,6 +226,7 @@ describe('holding line and direct transmission', () => {
     await settle();
     expect(app.mode).toBe('live');
     expect(word()).toBe('DIRECT TRANSMISSION');
+    expect(demo.state.signals.map((m) => m.type)).toEqual(['hello']); // asks the console for video
 
     demo.act.setLine('done');
     await settle();

@@ -1,4 +1,4 @@
-import type { ConsoleStats, InboxRow, LineEntry, Message, OperatorStatus } from '@nickii/shared';
+import type { ConsoleStats, InboxRow, LineEntry, Message, OperatorStatus, SignalMessage } from '@nickii/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from './console_app';
 import type { ConsoleBackend, OperatorEventInput } from './console_backend';
@@ -17,6 +17,7 @@ function fakeBackend() {
     clockSyncs: 0,
     heartbeat: null as { t_ms: number; data: HeartbeatData } | null,
     online: new Set<string>(),
+    signals: [] as SignalMessage[],
   };
   let n = 0;
   const msgCbs: Array<(m: Message) => void> = [];
@@ -71,6 +72,7 @@ function fakeBackend() {
       state.line.push({ id: `l${state.line.length}`, participant_id: id, status: 'invited', invited_t_ms: 0, arrived_t_ms: null, started_t_ms: null, ended_t_ms: null });
     },
     updateLine: async (id, change) => { Object.assign(state.line.find((e) => e.id === id)!, change); },
+    liveSignal: () => ({ async send(m) { state.signals.push(m); }, onMessage: () => () => {}, close: async () => {} }),
     logEvent: async (e) => { state.events.push(e); },
     lastHeartbeat: async () => state.heartbeat,
     onHeartbeat: () => () => {},
@@ -83,11 +85,15 @@ const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) 
 const btn = (label: string) => [...root.querySelectorAll('button')].find((b) => b.textContent === label)!;
 const names = (s: ReturnType<typeof fakeBackend>['state']) => s.events.map((e) => e.name);
 
+const fakeCamera = async () => ({
+  getTracks: () => [{ kind: 'video', stop() {} } as unknown as MediaStreamTrack],
+}) as unknown as MediaStream;
+
 async function start(fake = fakeBackend(), loggedIn = true) {
   fake.state.loggedIn = loggedIn;
   root = document.createElement('main');
   document.body.replaceChildren(root);
-  const app = new ConsoleApp({ root, backend: fake.backend });
+  const app = new ConsoleApp({ root, backend: fake.backend, getCamera: fakeCamera });
   await app.start();
   await settle();
   return app;
@@ -238,6 +244,25 @@ describe('controls', () => {
     btn('End').click(); await settle();
     expect(fake.state.line[0]!.status).toBe('done');
     expect(names(fake.state)).toEqual(expect.arrayContaining(['line_invite', 'transmission_start', 'transmission_end']));
+    app.stop();
+  });
+
+  it('camera on during a transmission sends the hello, camera off / End send bye', async () => {
+    const fake = fakeBackend();
+    const app = await start(fake);
+    (root.querySelector('.inbox li') as HTMLElement).click(); await settle();
+    btn('Invite to line').click(); await settle();
+    btn('Start').click(); await settle();
+    expect(btn('Camera on')).toBeDefined();
+    btn('Camera on').click(); await settle();
+    expect(fake.state.signals.map((m) => m.type)).toEqual(['hello']);
+    expect(root.querySelector<HTMLVideoElement>('.cam-preview')!.hidden).toBe(false);
+    expect(btn('Camera off')).toBeDefined();
+    btn('End').click(); await settle();
+    expect(fake.state.signals.map((m) => m.type)).toEqual(['hello', 'bye']);
+    expect(root.querySelector<HTMLVideoElement>('.cam-preview')!.hidden).toBe(true);
+    expect(fake.state.line[0]!.status).toBe('done');
+    expect(names(fake.state).filter((n) => n === 'mask_clip')).toHaveLength(2);
     app.stop();
   });
 
