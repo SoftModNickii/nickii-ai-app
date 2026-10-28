@@ -20,12 +20,13 @@ export interface DemoHandle {
     events: ParticipantEvent[];
     pushSubscriptions: number;
     line: LinePosition | null;
+    presence: Array<{ visible: boolean; mode: string }>;
   };
 }
 
 export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
   const state: DemoHandle['state'] = {
-    agreed: opts.agreed ?? false, messages: [], events: [], pushSubscriptions: 0, line: null,
+    agreed: opts.agreed ?? false, messages: [], events: [], pushSubscriptions: 0, line: null, presence: [],
   };
   let status: OperatorStatus = { state: 'live', status_word: 'LISTENING', updated_t_ms: Date.now() };
   const msgCbs = new Set<(m: Message) => void>();
@@ -61,6 +62,7 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
     async lineArrive() { if (state.line?.status === 'invited') act.setLine('waiting', state.line.line_position); },
     async lineLeave() { act.setLine('left'); },
     async insertEvents(events) { state.events.push(...events); },
+    async reportPresence(visible, mode) { state.presence.push({ visible, mode }); },
     onConnection(cb) { cb(true); return sub(connCbs, cb); },
   };
 

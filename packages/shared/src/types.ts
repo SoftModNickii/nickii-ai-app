@@ -106,3 +106,19 @@ export interface ParticipantEvent {
   data?: Record<string, unknown>;
   t_ms: number;
 }
+
+/** Result of the `console_stats()` database function. */
+export interface ConsoleStats {
+  installed: number;
+  with_push: number;
+  online_now: number;
+  open_now: number;
+  waiting: number;
+  in_line: number;
+  live_now: number;
+  installed_today: number;
+  messages_in_today: number;
+  messages_out_today: number;
+  pushes_today: number;
+  t_ms: number;
+}

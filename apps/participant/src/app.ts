@@ -25,6 +25,8 @@ export interface AppOptions {
   streamOptions?: StreamOptions;
   /** How often to refresh the line position while waiting (ms). */
   linePollMs?: number;
+  /** How often to report "I am here" while the app is open (ms). */
+  presenceMs?: number;
 }
 
 export class ParticipantApp {
@@ -41,6 +43,7 @@ export class ParticipantApp {
   private online = true;
   private subs: Unsubscribe[] = [];
   private linePoll: ReturnType<typeof setInterval> | null = null;
+  private presenceTimer: ReturnType<typeof setInterval> | null = null;
   private checking: Promise<void> | null = null;
   private opened = false;
 
@@ -182,6 +185,10 @@ export class ParticipantApp {
     this.mode = modeAfterLineChange(asked ?? 'chat', null, this.line?.status ?? null);
     await this.enterMode(this.mode);
     this.render();
+    void this.reportPresence();
+    this.presenceTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') void this.reportPresence();
+    }, this.o.presenceMs ?? 30_000);
   }
 
   private stopMain() {
@@ -189,7 +196,15 @@ export class ParticipantApp {
     this.subs = [];
     if (this.linePoll) clearInterval(this.linePoll);
     this.linePoll = null;
+    if (this.presenceTimer) clearInterval(this.presenceTimer);
+    this.presenceTimer = null;
     this.main = null;
+  }
+
+  /** Tells the server this app is open (so the console can count who is online). Never throws. */
+  private async reportPresence() {
+    const visible = document.visibilityState === 'visible';
+    await this.o.backend!.reportPresence(visible, this.mode, this.o.platform.device()).catch(() => {});
   }
 
   private onNewMessage(m: Message) {
@@ -262,7 +277,10 @@ export class ParticipantApp {
 
   private onVisibility() {
     const visible = document.visibilityState === 'visible';
-    if (this.step === 'ready') this.events.log(visible ? 'app_visible' : 'app_hidden');
+    if (this.step === 'ready') {
+      this.events.log(visible ? 'app_visible' : 'app_hidden');
+      void this.reportPresence();
+    }
     if (visible) {
       this.o.platform.setBadge(0);
       void this.events.flush();

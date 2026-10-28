@@ -231,3 +231,29 @@ describe('face_chunks storage', () => {
     expect(await as(NICKII, () => rows(`select * from storage.objects`))).toHaveLength(1);
   });
 });
+
+describe('presence and console stats (0002)', () => {
+  it('participants report presence; only Nickii sees it; a non-consented user is ignored', async () => {
+    await as(ALICE, () => db.query(`select public.report_presence(true, 'chat', 'ios')`));
+    await as(BOB, () => db.query(`select public.report_presence(false, 'line', 'android')`));
+    await as(STRANGER, () => db.query(`select public.report_presence(true, 'chat', 'ios')`));
+    expect(await as(ALICE, () => rows('select * from public.participant_presence'))).toHaveLength(0);
+    const seen = await as(NICKII, () => rows<{ participant_id: string; visible: boolean }>('select participant_id, visible from public.participant_presence order by participant_id'));
+    expect(seen).toEqual([{ participant_id: ALICE, visible: true }, { participant_id: BOB, visible: false }]);
+  });
+
+  it('console_stats counts installed, online, waiting, line and today; participants get nothing', async () => {
+    const [s] = await as(NICKII, () => rows<Record<string, number>>(`select * from public.console_stats('Europe/Vienna')`));
+    expect(s).toMatchObject({ installed: 2, with_push: 1, online_now: 1, open_now: 2, live_now: 1 });
+    expect(Number(s!.messages_in_today)).toBeGreaterThanOrEqual(2);
+    expect(Number(s!.messages_out_today)).toBeGreaterThanOrEqual(2);
+    expect(Number(s!.installed_today)).toBe(2);
+    expect(await as(ALICE, () => rows(`select * from public.console_stats()`))).toHaveLength(0);
+  });
+
+  it('someone not seen for 90 s is no longer online', async () => {
+    await db.query(`update public.participant_presence set last_seen_t_ms = last_seen_t_ms - 100000 where participant_id = $1`, [ALICE]);
+    const [s] = await as(NICKII, () => rows<{ online_now: number }>(`select online_now from public.console_stats()`));
+    expect(s!.online_now).toBe(0);
+  });
+});

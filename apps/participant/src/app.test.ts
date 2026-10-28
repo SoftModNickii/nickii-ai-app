@@ -190,6 +190,25 @@ describe('chat', () => {
   });
 });
 
+describe('presence', () => {
+  it('reports "I am here" when the chat opens and when the app goes to the background', async () => {
+    const demo = demoBackend({ agreed: true });
+    await launch({}, demo);
+    expect(demo.state.presence).toEqual([{ visible: true, mode: 'chat' }]);
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    expect(demo.state.presence.at(-1)).toEqual({ visible: false, mode: 'chat' });
+  });
+
+  it('is not reported before the install gate is passed', async () => {
+    const demo = demoBackend({ agreed: true });
+    await launch({ subscribed: false }, demo);
+    expect(demo.state.presence).toEqual([]);
+  });
+});
+
 describe('holding line and direct transmission', () => {
   it('invitation → LINE with position; transmission → LIVE; end → CHAT', async () => {
     const demo = demoBackend({ agreed: true });

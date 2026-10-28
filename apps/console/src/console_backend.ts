@@ -2,7 +2,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  measureServerOffset, type InboxRow, type LineEntry, type Message, type OperatorEventName, type OperatorStatus,
+  measureServerOffset, type ConsoleStats, type InboxRow, type LineEntry, type Message, type OperatorEventName,
+  type OperatorStatus,
 } from '@nickii/shared';
 import type { HeartbeatData } from './face_health';
 
@@ -24,6 +25,10 @@ export interface ConsoleBackend {
   saveClockSync(offsetMs: number, roundTripMs: number): Promise<void>;
 
   loadInbox(): Promise<InboxRow[]>;
+  /** The numbers strip. `timezone` decides when "today" starts. */
+  loadStats(timezone: string): Promise<ConsoleStats>;
+  /** participant ids seen in the last 90 s with the app visible. */
+  loadOnline(): Promise<Set<string>>;
   loadThread(participantId: string): Promise<Message[]>;
   /** Every new message in any thread. */
   onMessage(cb: (m: Message) => void): Unsubscribe;
@@ -79,6 +84,20 @@ export function supabaseConsoleBackend(client: SupabaseClient): ConsoleBackend {
 
     async loadInbox() {
       return check(await client.from('inbox').select('*')) as InboxRow[];
+    },
+
+    async loadStats(timezone) {
+      const rows = check(await client.rpc('console_stats', { p_timezone: timezone })) as ConsoleStats[];
+      if (!rows[0]) throw new Error('not an operator');
+      return rows[0];
+    },
+
+    async loadOnline() {
+      const { data: now } = await client.rpc('server_time_ms');
+      const since = (typeof now === 'number' ? now : Date.now()) - 90_000;
+      const rows = check(await client.from('participant_presence').select('participant_id')
+        .eq('visible', true).gt('last_seen_t_ms', since)) as Array<{ participant_id: string }>;
+      return new Set(rows.map((r) => r.participant_id));
     },
 
     async loadThread(participantId) {

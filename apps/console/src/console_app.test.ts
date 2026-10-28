@@ -1,4 +1,4 @@
-import type { InboxRow, LineEntry, Message, OperatorStatus } from '@nickii/shared';
+import type { ConsoleStats, InboxRow, LineEntry, Message, OperatorStatus } from '@nickii/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConsoleApp } from './console_app';
 import type { ConsoleBackend, OperatorEventInput } from './console_backend';
@@ -16,6 +16,7 @@ function fakeBackend() {
     pushes: [] as Array<{ to: string[] | 'all'; kind: string; body: string }>,
     clockSyncs: 0,
     heartbeat: null as { t_ms: number; data: HeartbeatData } | null,
+    online: new Set<string>(),
   };
   let n = 0;
   const msgCbs: Array<(m: Message) => void> = [];
@@ -48,6 +49,15 @@ function fakeBackend() {
     measureClockOffset: async () => ({ offsetMs: 0, roundTripMs: 20 }),
     saveClockSync: async () => { state.clockSyncs++; },
     loadInbox: async () => inbox(),
+    loadStats: async (): Promise<ConsoleStats> => ({
+      installed: state.participants.length, with_push: 1, online_now: state.online.size, open_now: state.online.size,
+      waiting: inbox().filter((r) => r.waiting_since_t_ms !== null).length,
+      in_line: state.line.filter((e) => e.status === 'invited' || e.status === 'waiting').length,
+      live_now: state.line.filter((e) => e.status === 'live').length,
+      installed_today: 1, messages_in_today: state.messages.filter((m) => m.sender === 'participant').length,
+      messages_out_today: state.messages.filter((m) => m.sender === 'nickii').length, pushes_today: state.pushes.length, t_ms: Date.now(),
+    }),
+    loadOnline: async () => new Set(state.online),
     loadThread: async (id) => state.messages.filter((m) => m.participant_id === id),
     onMessage: (cb) => { msgCbs.push(cb); return () => {}; },
     reply: async (id, body) => add(id, 'nickii', body, Date.now() + n),
@@ -161,6 +171,32 @@ describe('inbox and reply', () => {
     items[0]!.click(); await settle();
     items[1]!.click(); await settle();
     expect(names(fake.state)).toEqual(['thread_opened', 'thread_closed', 'thread_opened']);
+    app.stop();
+  });
+});
+
+describe('numbers', () => {
+  it('shows installed, online, waiting and today, and marks who is online', async () => {
+    const fake = fakeBackend();
+    fake.participantWrites('a', 'hello', Date.now() - 1000);
+    fake.state.online.add('a');
+    const app = await start(fake);
+    const stats = Object.fromEntries([...root.querySelectorAll('.stat')].map((s) =>
+      [s.querySelector('.stat-label')!.textContent, s.querySelector('.stat-value')!.textContent]));
+    expect(stats).toMatchObject({ 'installed': '2', 'online now': '1', 'waiting': '1', 'in today': '1', 'out today': '0' });
+    const items = [...root.querySelectorAll('.inbox li')];
+    expect(items[0]!.classList.contains('online')).toBe(true);
+    expect(items[0]!.querySelector('.online-dot')).not.toBeNull();
+    expect(items[1]!.querySelector('.online-dot')).toBeNull();
+    app.stop();
+  });
+
+  it('keeps the last numbers when the server cannot be reached', async () => {
+    const fake = fakeBackend();
+    const app = await start(fake);
+    fake.backend.loadStats = async () => { throw new Error('offline'); };
+    await settle();
+    expect(root.querySelector('.stat-value')!.textContent).toBe('2');
     app.stop();
   });
 });
