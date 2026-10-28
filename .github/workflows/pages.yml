@@ -1,0 +1,62 @@
+# Publishes the participant app and the console on GitHub Pages:
+#   https://softmodnickii.github.io/nickii-ai-app/          participant app
+#   https://softmodnickii.github.io/nickii-ai-app/console/  console
+# Runs on every push to `foundation` (and `main`). The values below are the public ones (safe in the
+# browser, see .env.example); secrets live only in Supabase.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [foundation, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  VITE_SUPABASE_URL: https://nvvpcevgdmhnhzcfxvun.supabase.co
+  VITE_SUPABASE_ANON_KEY: sb_publishable_EAmVYBIhPp3rVPVMktrsuw_v0koTQgF
+  VITE_VAPID_PUBLIC_KEY: BDKuSufhL_NPJeq4zgfy5EFbQqsLAVgwXzcPq-cmLyTeeUM14SJ-CKIBCi9ven6b0J9KKgzDln0KZvmNFkbJ8rg
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build participant app
+        run: VITE_BASE=/nickii-ai-app/ npm run build -w apps/participant
+      - name: Build console
+        run: VITE_BASE=/nickii-ai-app/console/ npm run build -w apps/console
+      - name: Put both in one site
+        run: |
+          mkdir -p site/console
+          cp -r apps/participant/dist/. site/
+          cp -r apps/console/dist/. site/console/
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

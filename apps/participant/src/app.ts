@@ -59,7 +59,7 @@ export class ParticipantApp {
   }
 
   async start(): Promise<void> {
-    await this.o.platform.start();
+    await this.o.platform.start(`${import.meta.env.BASE_URL}sw.js`);
     const launch = this.o.platform.takeLaunchFromNotification();
     document.addEventListener('visibilitychange', () => this.onVisibility());
     this.o.platform.onNotificationOpened((open) => this.events.log('push_opened', { kind: open.kind, while_open: true }));

@@ -54,6 +54,11 @@ describe('buildPayload', () => {
     expect(p.mutable).toBe(true);
   });
 
+  it('keeps the folder when the app lives under a path (GitHub Pages)', () => {
+    const p = buildPayload({ to: ['p1'], kind: 'line_invite', body: 'x' }, 'https://softmodnickii.github.io/nickii-ai-app');
+    expect(p.notification.navigate).toBe('https://softmodnickii.github.io/nickii-ai-app/?mode=line&from=push&kind=line_invite');
+  });
+
   it('line invites open the app in the holding line', () => {
     const p = buildPayload({ to: ['p1'], kind: 'line_invite', body: 'Come in' }, app);
     expect(p.notification.navigate).toBe('https://nickii.example/?mode=line&from=push&kind=line_invite');

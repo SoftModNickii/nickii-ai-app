@@ -66,6 +66,16 @@ The CLI asks you to log in once (`npx supabase login`).
 Phones cannot install from `localhost`. To try on the iPhone, deploy (step 7).
 
 ## 7. Hosting (static, free tiers)
+
+**Current choice: GitHub Pages**, set up by `.github/workflows/pages.yml`. Every push to `foundation` or `main`
+publishes both apps:
+- participant app: https://softmodnickii.github.io/nickii-ai-app/
+- console: https://softmodnickii.github.io/nickii-ai-app/console/
+
+The public values (Supabase URL, anon key, VAPID public key) are in that workflow file. The push function's
+`APP_URL` secret must match the participant address. A custom domain can be added later in the repository's
+Settings → Pages. Netlify is the alternative below (`netlify.toml` files are ready).
+
 Each app builds to plain files: `npm run build` → `apps/<app>/dist`.
 - **Participant app** needs its own address with HTTPS at the root (`/`), e.g. a Netlify / Cloudflare Pages /
   Vercel site with build command `npm run build -w apps/participant` and output `apps/participant/dist`.

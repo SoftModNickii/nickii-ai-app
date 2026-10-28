@@ -71,7 +71,8 @@ export function truncateBody(text: string, max = MAX_BODY_CHARS): string {
 
 export function buildPayload(req: PushRequest, appUrl: string): DeclarativePayload {
   const path = req.path ?? (req.kind === 'line_invite' ? '/?mode=line' : '/');
-  const navigate = new URL(path, appUrl);
+  // APP_URL may live in a folder (https://host/nickii-ai-app/); the path is relative to that folder.
+  const navigate = new URL(path.replace(/^\//, ''), appUrl.endsWith('/') ? appUrl : appUrl + '/');
   // The app reads this marker to log `push_opened` (packages/shared/src/platform.ts parseNotificationOpen).
   navigate.searchParams.set('from', 'push');
   navigate.searchParams.set('kind', req.kind);
