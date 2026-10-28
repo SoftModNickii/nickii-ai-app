@@ -71,6 +71,7 @@ Phones cannot install from `localhost`. To try on the iPhone, deploy (step 7).
 publishes both apps:
 - participant app: https://softmodnickii.github.io/nickii-ai-app/
 - console: https://softmodnickii.github.io/nickii-ai-app/console/
+- face capture: https://softmodnickii.github.io/nickii-ai-app/face/ (open in Chrome on the Mac, log in, Start recording)
 
 The public values (Supabase URL, anon key, VAPID public key) are in that workflow file. The push function's
 `APP_URL` secret must match the participant address. A custom domain can be added later in the repository's
