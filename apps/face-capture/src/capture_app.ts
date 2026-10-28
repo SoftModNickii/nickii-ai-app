@@ -109,7 +109,7 @@ export class CaptureApp {
 
   private async loadDetector(): Promise<Detector> {
     const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-    const fileset = await FilesetResolver.forVisionTasks('/mediapipe');
+    const fileset = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}mediapipe`);
     return FaceLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: this.modelUrl, delegate: 'GPU' },
       runningMode: 'VIDEO',

@@ -1,6 +1,7 @@
 # Publishes the participant app and the console on GitHub Pages:
 #   https://softmodnickii.github.io/nickii-ai-app/          participant app
 #   https://softmodnickii.github.io/nickii-ai-app/console/  console
+#   https://softmodnickii.github.io/nickii-ai-app/face/     face capture (Chrome on the Mac)
 # Runs on every push to `foundation` (and `main`). The values below are the public ones (safe in the
 # browser, see .env.example); secrets live only in Supabase.
 name: Deploy to GitHub Pages
@@ -38,11 +39,14 @@ jobs:
         run: VITE_BASE=/nickii-ai-app/ npm run build -w apps/participant
       - name: Build console
         run: VITE_BASE=/nickii-ai-app/console/ npm run build -w apps/console
-      - name: Put both in one site
+      - name: Build face capture
+        run: VITE_BASE=/nickii-ai-app/face/ npm run build -w apps/face-capture
+      - name: Put all three in one site
         run: |
-          mkdir -p site/console
+          mkdir -p site/console site/face
           cp -r apps/participant/dist/. site/
           cp -r apps/console/dist/. site/console/
+          cp -r apps/face-capture/dist/. site/face/
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
         with:
