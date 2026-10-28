@@ -5,7 +5,7 @@ import { LABELS, LINE_LABELS, SENTENCES, type Lang } from './copy';
 import { InputMethodTracker, type InputMethod } from './input_method';
 import { availableModes } from './mode';
 import type { StatusLine } from './status_line';
-import { ghostHead } from './ghost_head';
+import { ghostHead, type GhostHead } from './ghost_head';
 
 export interface MainScreenHandlers {
   onModeTap(mode: Mode): void;
@@ -17,7 +17,9 @@ export interface MainScreenHandlers {
 export class MainScreen {
   readonly el: HTMLElement;
   private readonly tabs: Record<Mode, HTMLButtonElement>;
-  private readonly head: SVGSVGElement;
+  private readonly headSlot: HTMLElement;
+  private head: GhostHead | null = null;
+  private away = false;
   private readonly word: HTMLElement;
   private readonly sentence: HTMLElement;
   private readonly lineInfo: HTMLElement;
@@ -29,14 +31,19 @@ export class MainScreen {
   private composing = false;
 
   constructor(private readonly lang: Lang, private readonly handlers: MainScreenHandlers,
-    private readonly streamOpts: StreamOptions = {}) {
+    private readonly streamOpts: StreamOptions = {}, headStyle?: 'svg' | '3d') {
     const tab = (m: Mode) => {
       const b = h('button', { type: 'button', class: 'mode', attrs: { role: 'tab' } }, LABELS.modes[m]);
       b.onclick = () => handlers.onModeTap(m);
       return b;
     };
     this.tabs = { chat: tab('chat'), line: tab('line'), live: tab('live') };
-    this.head = ghostHead();
+    this.headSlot = h('div', { class: 'ghost-slot' });
+    void ghostHead('', headStyle).then((head) => {
+      this.head = head;
+      head.setAway(this.away);
+      this.headSlot.replaceChildren(head.el);
+    });
     this.word = h('p', { class: 'status', attrs: { 'data-testid': 'status-word' } });
     this.sentence = h('p', { class: 'sentence quiet' });
     this.lineInfo = h('div', { class: 'line-info', hidden: true });
@@ -62,7 +69,7 @@ export class MainScreen {
         h('div', { class: 'wordmark' }, LABELS.wordmark),
         h('nav', { class: 'modes', attrs: { role: 'tablist' } },
           this.tabs.chat, h('span', { class: 'dot' }, '·'), this.tabs.line, h('span', { class: 'dot' }, '·'), this.tabs.live)),
-      h('div', { class: 'stage' }, this.head, this.word, this.sentence, this.lineInfo),
+      h('div', { class: 'stage' }, this.headSlot, this.word, this.sentence, this.lineInfo),
       this.thread,
       form);
   }
@@ -83,7 +90,12 @@ export class MainScreen {
   }
 
   setAway(away: boolean): void {
-    this.head.classList.toggle('away', away);
+    this.away = away;
+    this.head?.setAway(away);
+  }
+
+  dispose(): void {
+    this.head?.dispose();
   }
 
   /** History: shown at once. */

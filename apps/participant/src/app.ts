@@ -27,6 +27,8 @@ export interface AppOptions {
   linePollMs?: number;
   /** How often to report "I am here" while the app is open (ms). */
   presenceMs?: number;
+  /** Force the flat or the 3D head (tests, previews). */
+  headStyle?: 'svg' | '3d';
 }
 
 export class ParticipantApp {
@@ -156,7 +158,7 @@ export class ParticipantApp {
       onComposeStart: () => this.events.log('compose_start', { mode: this.mode }),
       onSend: (text, method) => this.send(text, method),
       onLeaveLine: () => void this.leaveLine(),
-    }, this.o.streamOptions);
+    }, this.o.streamOptions, this.o.headStyle);
     clear(this.o.root);
     this.o.root.append(this.main.el);
     this.o.platform.setBadge(0);
@@ -198,6 +200,7 @@ export class ParticipantApp {
     this.linePoll = null;
     if (this.presenceTimer) clearInterval(this.presenceTimer);
     this.presenceTimer = null;
+    this.main?.dispose();
     this.main = null;
   }
 

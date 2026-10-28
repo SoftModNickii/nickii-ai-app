@@ -25,6 +25,11 @@
 
 /* ---------- ghost head ---------- */
 
+.ghost-slot { display: flex; justify-content: center; width: 100%; }
+.ghost-3d { width: min(56vw, 240px); aspect-ratio: 300 / 360; height: auto; animation: none; display: block; }
+.mode-chat .ghost-3d { width: 110px; }
+.mode-line .ghost-3d, .mode-live .ghost-3d { width: min(62vw, 260px); }
+
 .ghost {
   width: min(56vw, 240px); height: auto; aspect-ratio: 300 / 360;
   animation: ghost-float 6s ease-in-out infinite, ghost-flicker 4.7s steps(1) infinite;

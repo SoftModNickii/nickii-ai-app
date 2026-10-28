@@ -3,14 +3,14 @@
 import { h, type Platform } from '@nickii/shared';
 import { AGREEMENT } from './agreement';
 import { GATE, IOS_STEPS, LABELS, type Lang, type Text } from './copy';
-import { ghostHead } from './ghost_head';
+import { ghostHeadSvg } from './ghost_head';
 
 const t = (text: Text, lang: Lang) => text[lang];
 
 function frame(...children: (Node | null)[]): HTMLElement {
   return h('section', { class: 'gate' },
     h('div', { class: 'wordmark' }, LABELS.wordmark),
-    ghostHead('ghost-small'),
+    ghostHeadSvg('ghost-small'),
     ...children);
 }
 

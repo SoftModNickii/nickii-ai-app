@@ -60,6 +60,7 @@ async function launch(device: Partial<FakeDevice>, demo: DemoHandle | null = dem
     lang: 'en',
     streamOptions: { baseMs: 1, jitter: 0 },
     linePollMs: 1_000_000,
+    headStyle: 'svg',
   });
   await app.start();
   await settle();
