@@ -2,7 +2,7 @@
 // push to one/all, Live/Away, holding line, face-capture health. Desktop and phone layouts.
 
 import {
-  clear, h, ServerClock, type ConsoleStats, type InboxRow, type LineEntry, type Message, type OperatorEventName,
+  clear, h, LiveSender, ServerClock, type ConsoleStats, type LiveState, type InboxRow, type LineEntry, type Message, type OperatorEventName,
   type OperatorStatus,
 } from '@nickii/shared';
 import { ComposeTiming } from './compose_timing';
@@ -24,6 +24,8 @@ export interface ConsoleOptions {
   statsMs?: number;
   /** Decides when "today" starts in the numbers. */
   timezone?: string;
+  /** Camera access (tests replace it). */
+  getCamera?: (audio: boolean) => Promise<MediaStream>;
 }
 
 export class ConsoleApp {
@@ -36,6 +38,11 @@ export class ConsoleApp {
   private line: LineEntry[] = [];
   private heartbeat: { t_ms: number; data: HeartbeatData } | null = null;
   private stats: ConsoleStats | null = null;
+  private sender: LiveSender | null = null;
+  private senderFor: string | null = null;
+  private camera: MediaStream | null = null;
+  private cameraState: LiveState = 'idle';
+  private withMic = false;
   private online = new Set<string>();
   private subs: Unsubscribe[] = [];
   private timers: ReturnType<typeof setInterval>[] = [];
@@ -110,6 +117,7 @@ export class ConsoleApp {
   }
 
   stop(): void {
+    if (this.sender) void this.cameraOff();
     this.subs.forEach((u) => u());
     this.timers.forEach(clearInterval);
     this.subs = [];
@@ -168,6 +176,8 @@ export class ConsoleApp {
     e.composer = h('div', { class: 'composer' }, replyBox, h('div', { class: 'row' }, inviteBtn, sendBtn));
     e.notice = h('p', { class: 'notice', attrs: { role: 'status' } });
     e.line = h('div', { class: 'line' });
+    e.preview = h('video', { class: 'cam-preview', autoplay: true, playsInline: true, muted: true, hidden: true });
+    e.camStatus = h('p', { class: 'quiet small' });
     const bc = h('textarea', { rows: 3, placeholder: 'Message to everyone', attrs: { 'aria-label': 'Message to everyone' } });
     const bcBtn = h('button', { type: 'button', class: 'btn secondary' }, 'Send to all');
     bcBtn.onclick = () => void this.broadcast(bc);
@@ -189,7 +199,7 @@ export class ConsoleApp {
       h('section', { class: 'col col-inbox' }, h('h2', {}, 'Inbox'), e.inbox),
       h('section', { class: 'col col-thread' }, e.threadHead, e.messages, e.composer, e.notice),
       h('section', { class: 'col col-control' },
-        h('h2', {}, 'Holding line'), e.line,
+        h('h2', {}, 'Holding line'), e.line, e.preview, e.camStatus,
         h('h2', {}, 'Push to all'), bc, bcBtn,
         h('h2', {}, 'Face capture'), e.faceDetail));
     clear(this.o.root);
@@ -279,9 +289,14 @@ export class ConsoleApp {
     this.el.line!.replaceChildren(h('ol', {}, ...this.line.map((e) => {
       const buttons: HTMLElement[] = [];
       if (e.status === 'live') {
-        const end = h('button', { type: 'button', class: 'btn' }, 'End');
+        const onAir = this.sender !== null && this.senderFor === e.participant_id;
+        const cam = h('button', { type: 'button', class: `btn ${onAir ? 'secondary' : ''}` }, onAir ? 'Camera off' : 'Camera on');
+        cam.onclick = () => void (onAir ? this.cameraOff() : this.cameraOn(e.participant_id));
+        const mic = h('label', { class: 'small' }, h('input', { type: 'checkbox', checked: this.withMic }), ' with sound');
+        (mic.firstChild as HTMLInputElement).onchange = (ev) => { this.withMic = (ev.target as HTMLInputElement).checked; };
+        const end = h('button', { type: 'button', class: 'btn secondary' }, 'End');
         end.onclick = () => void this.endTransmission(e);
-        buttons.push(end);
+        buttons.push(cam, mic, end);
       } else {
         const start = h('button', { type: 'button', class: 'btn', disabled: someoneLive }, 'Start');
         start.onclick = () => void this.startTransmission(e);
@@ -393,6 +408,54 @@ export class ConsoleApp {
     }
   }
 
+  /** Sends the Mac's camera to the phone in transmission. Must be started from a click. */
+  private async cameraOn(participantId: string) {
+    try {
+      this.camera = await (this.o.getCamera ?? defaultCamera)(this.withMic);
+    } catch (err) {
+      this.setCamStatus(`Camera not available: ${(err as Error).message}`);
+      return;
+    }
+    const sender = new LiveSender(this.b.liveSignal(participantId));
+    this.sender = sender;
+    this.senderFor = participantId;
+    sender.onState((st) => {
+      this.cameraState = st;
+      this.setCamStatus(st === 'connected' ? 'On air: the phone shows your camera.'
+        : st === 'connecting' ? 'Connecting to the phone…'
+        : st === 'failed' ? 'Connection failed, trying again. If it keeps failing, the network needs a relay (docs/decisions.md).'
+        : '');
+    });
+    (this.el.preview as HTMLVideoElement).srcObject = this.camera;
+    this.el.preview!.hidden = false;
+    await sender.start(this.camera);
+    await this.log('mask_clip', { source: 'camera', state: 'on' }, participantId);
+    this.renderLine();
+  }
+
+  private async cameraOff() {
+    const sender = this.sender;
+    const who = this.senderFor;
+    this.sender = null;
+    this.senderFor = null;
+    await sender?.stop();
+    this.camera?.getTracks().forEach((t) => t.stop());
+    this.camera = null;
+    (this.el.preview as HTMLVideoElement).srcObject = null;
+    this.el.preview!.hidden = true;
+    this.setCamStatus('');
+    if (who) await this.log('mask_clip', { source: 'camera', state: 'off' }, who);
+    this.renderLine();
+  }
+
+  private setCamStatus(text: string) {
+    if (this.el.camStatus) this.el.camStatus.textContent = text;
+  }
+
+  get onAir(): boolean {
+    return this.cameraState === 'connected';
+  }
+
   private async startTransmission(e: LineEntry) {
     await this.b.updateLine(e.id, { status: 'live', started_t_ms: this.nowServer() });
     await this.log('transmission_start', {}, e.participant_id);
@@ -400,6 +463,7 @@ export class ConsoleApp {
   }
 
   private async endTransmission(e: LineEntry) {
+    if (this.sender) await this.cameraOff();
     await this.b.updateLine(e.id, { status: 'done', ended_t_ms: this.nowServer() });
     await this.log('transmission_end', {}, e.participant_id);
     await this.reloadLine();
@@ -447,4 +511,11 @@ export class ConsoleApp {
   get pendingEvents(): number {
     return this.failedEvents.length;
   }
+}
+
+async function defaultCamera(audio: boolean): Promise<MediaStream> {
+  return navigator.mediaDevices.getUserMedia({
+    video: { width: { ideal: 960 }, height: { ideal: 1280 }, facingMode: 'user', frameRate: { ideal: 24 } },
+    audio,
+  });
 }

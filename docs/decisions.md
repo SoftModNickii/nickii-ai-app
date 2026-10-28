@@ -20,7 +20,13 @@ What was decided while building the foundation, and why. Things marked **Nickii 
 15. **Mode in face_context** is: live (transmission running) > away (Nickii set away) > line (someone waiting) > chat.
 16. **Schema tests run in PGlite** (Postgres compiled to WebAssembly, https://pglite.dev) with a small stand-in for Supabase's auth/storage schemas. They check row-level security for each role without Docker or a Supabase account. They do not test Supabase's real Auth or Realtime.
 17. **MediaPipe's WebAssembly files are served from the face-capture page itself**; the model file comes from Google's server unless `VITE_FACE_MODEL_URL` is set.
-18. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
+18. **LIVE video goes straight from the Mac to the phone (WebRTC), with Supabase Realtime broadcast only
+    for the setup messages** (`packages/shared/src/live_video.ts`). No video service, no cost, one-to-one by
+    design. Only a STUN server (Google's public one) is used; without a TURN relay, some mobile networks
+    cannot connect (estimate: around 1 in 10). If tests show that, add a TURN server to `DEFAULT_ICE_SERVERS`
+    (e.g. a small Coturn on a VPS, or a hosted one; **paid, Nickii decides**). The console's "with sound"
+    box sends her voice as well; off by default. The phone never sends audio or video back.
+19. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
 
 ## App store path (later, if wanted)
 The apps are web apps today. To ship in the App Store / Play Store, wrap the participant app with

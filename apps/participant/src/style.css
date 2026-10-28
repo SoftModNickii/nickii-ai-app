@@ -39,6 +39,14 @@
 .mode-line .ghost, .mode-live .ghost { width: min(62vw, 260px); }
 .ghost.away { opacity: .45; animation-duration: 9s, 2.3s; }
 
+/* ---------- live video ---------- */
+
+.live-video {
+  width: min(78vw, 320px); aspect-ratio: 3 / 4; object-fit: cover; background: var(--surface-soft);
+  border-radius: 46% 46% 44% 44% / 52% 52% 40% 40%; /* soft head-like oval */
+  display: block; margin: 6px auto 10px;
+}
+
 /* ---------- main screen ---------- */
 
 .main {

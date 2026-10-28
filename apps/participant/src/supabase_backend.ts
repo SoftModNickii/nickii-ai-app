@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  measureServerOffset, type LinePosition, type LineStatus, type Message, type OperatorStatus,
+  measureServerOffset, supabaseLiveSignal, type LinePosition, type LineStatus, type Message, type OperatorStatus,
 } from '@nickii/shared';
 import type { Backend } from './backend';
 
@@ -111,6 +111,10 @@ export function supabaseBackend(client: SupabaseClient): Backend {
 
     async insertEvents(events) {
       check(await client.from('participant_events').insert(events));
+    },
+
+    liveSignal(participantId) {
+      return supabaseLiveSignal(client, participantId);
     },
 
     async reportPresence(visible, mode, platform) {

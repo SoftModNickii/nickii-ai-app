@@ -32,6 +32,8 @@ After a reload the folder must be chosen again (browser permission rule).
 | "no push was delivered" | Note under the thread | That phone has no working subscription (app removed or notifications off). Nothing to fix on our side. |
 | Operator events could not be saved (bad connection) | — | They are kept in the page and sent with the next one. Do not reload while offline. |
 | Someone stuck in LIVE | Line panel shows them as live | Press **End**. Only one transmission can run at a time; the database refuses a second. |
+| Camera on, but the phone still shows the head | Camera status stays "Connecting…" or "Connection failed" | Both devices need internet. Press Camera off, then Camera on. If it never connects on that phone's network, a relay server is needed (docs/decisions.md 18). The participant can still read your text replies. |
+| Browser asks for camera permission again | — | Allow it; the console address must stay the same. |
 
 ## Participants
 | Problem | How you notice | What to do |
