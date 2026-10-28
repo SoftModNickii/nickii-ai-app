@@ -2,13 +2,13 @@
 #   https://softmodnickii.github.io/nickii-ai-app/          participant app
 #   https://softmodnickii.github.io/nickii-ai-app/console/  console
 #   https://softmodnickii.github.io/nickii-ai-app/face/     face capture (Chrome on the Mac)
-# Runs on every push to `foundation` (and `main`). The values below are the public ones (safe in the
+# Runs on every push to `main` (GitHub Pages only deploys from the default branch). The values below are the public ones (safe in the
 # browser, see .env.example); secrets live only in Supabase.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [foundation, main]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
