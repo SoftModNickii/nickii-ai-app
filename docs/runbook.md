@@ -24,6 +24,10 @@ Items marked *(untested)* have not been tried on real devices yet.
 
 After a reload the folder must be chosen again (browser permission rule).
 
+Face capture on the iPhone/iPad: keep the phone plugged in and the Nickii Face app on screen (iPhone
+pauses the camera when another app is in front or the screen locks; the app asks to keep the screen on).
+If the console shows FACE DOWN, open the Nickii Face icon again: it starts by itself.
+
 ## Console
 | Problem | How you notice | What to do |
 | --- | --- | --- |

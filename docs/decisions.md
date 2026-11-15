@@ -31,7 +31,13 @@ What was decided while building the foundation, and why. Things marked **Nickii 
     So: scan with a free app, export PLY/OBJ, import in the console (`packages/shared/src/head_model.ts`:
     parse, orient, crop, sample evenly over the surface, encode), publish to the public bucket; participants
     load it by `operator_status.head_version`. Placeholder stays the fallback. See docs/head_scan.md.
-20. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
+20. **The phone is the sensor.** Face capture runs on the iPhone/iPad (front camera, MediaPipe in Safari,
+    GPU with CPU fallback), installable as "Nickii Face", starts by itself once started. It sends the live
+    mask (468 face points, ~3.7 kB, 12 frames/s) by Supabase broadcast on `mask:<participant>` only to the
+    phone in LIVE, so Realtime limits are not a concern; and "Use my face as the head" publishes a snapshot
+    head (`packages/shared/src/face_mask.ts`). Face-mesh edges are copied from MediaPipe into
+    `face_mesh_edges.ts` (script in `scripts/`), so participants never download MediaPipe.
+21. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
 
 ## App store path (later, if wanted)
 The apps are web apps today. To ship in the App Store / Play Store, wrap the participant app with

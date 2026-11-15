@@ -3,8 +3,13 @@
 .login { max-width: 320px; margin: 18vh auto 0; display: grid; gap: 12px; padding: 0 20px; }
 input { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px 12px; font-size: 16px; }
 .error { color: var(--danger); }
-.capture { max-width: 720px; margin: 0 auto; padding: 24px; display: grid; gap: 16px; }
-.preview { width: 100%; max-width: 480px; border-radius: var(--radius-card); background: var(--surface-soft); transform: scaleX(-1); }
+.capture { max-width: 720px; margin: 0 auto; padding: calc(var(--safe-top) + 20px) 16px calc(var(--safe-bottom) + 24px); display: grid; gap: 14px; }
+.stage { position: relative; display: flex; justify-content: center; background: var(--surface-soft); border-radius: var(--radius-card); overflow: hidden; min-height: 240px; }
+.preview { width: 100%; max-width: 480px; display: block; transform: scaleX(-1); }
+.preview.offstage { position: absolute; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.dots { width: min(80vw, 360px); aspect-ratio: 300 / 360; display: block; }
+.banner { margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--ink); color: #fff; font-size: 15px; text-align: center; }
+label.row { align-items: center; gap: 8px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .info { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
 .info dt { color: var(--quiet); }

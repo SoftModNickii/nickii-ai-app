@@ -34,6 +34,9 @@ CI runs the same on GitHub (`.github/workflows/ci.yml`).
 - Added since the first pull request: console numbers (installed, online, waiting, …), 3D point-cloud head,
   LIVE video from the Mac camera to the phone (WebRTC, no relay yet).
 
+- Added 15 Nov: head scan import in the console (PLY/OBJ), face capture on the iPhone (installable,
+  auto-start, live dots), "Use my face as the head", live mask to the phone in LIVE.
+
 ## Not verified yet (needs real devices or a real Supabase project)
 - Everything in docs/setup.md step 9: install + push + badge on real iPhones (iOS 16.4–18.3 and 18.4+)
   and Android; Declarative Web Push behaviour; the iOS install-guide wording against current Safari.

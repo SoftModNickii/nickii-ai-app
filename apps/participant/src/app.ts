@@ -2,7 +2,7 @@
 // the app), then the Ghost UI. Talks only to `Platform` (device) and `Backend` (server).
 
 import {
-  clear, gateStep, LiveReceiver, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
+  clear, decodeFace, faceDots, gateStep, LiveReceiver, type MaskChannel, readGateInput, ServerClock, type GateStep, type LinePosition, type LineStatus, type Message,
   type Mode, type OperatorStatus, type Platform, type StreamOptions,
 } from '@nickii/shared';
 import { AGREEMENT_VERSION } from './agreement';
@@ -29,6 +29,8 @@ export interface AppOptions {
   presenceMs?: number;
   /** Force the flat or the 3D head (tests, previews). */
   headStyle?: 'svg' | '3d';
+  /** Back to the head when no live mask frame came for this long (ms). */
+  maskTimeoutMs?: number;
 }
 
 export class ParticipantApp {
@@ -48,6 +50,9 @@ export class ParticipantApp {
   private presenceTimer: ReturnType<typeof setInterval> | null = null;
   private receiver: LiveReceiver | null = null;
   private headVersion: string | null = null;
+  private mask: { channel: MaskChannel; off: () => void; timer: ReturnType<typeof setTimeout> | null } | null = null;
+  /** For tests: whether Nickii's live face is being shown. */
+  get showingLiveFace(): boolean { return this.main?.showingLiveFace ?? false; }
   /** For tests: the head version currently shown. */
   get shownHead(): string | null { return this.headVersion; }
   private checking: Promise<void> | null = null;
@@ -300,8 +305,9 @@ export class ParticipantApp {
     }
   }
 
-  /** Live transmission: wait for Nickii's camera on the signalling channel. */
+  /** Live transmission: wait for Nickii's camera on the signalling channel, and for her live mask. */
   private async startVideo() {
+    this.startMask();
     if (this.receiver || !this.participantId) return;
     const receiver = new LiveReceiver(this.o.backend!.liveSignal(this.participantId));
     this.receiver = receiver;
@@ -309,7 +315,32 @@ export class ParticipantApp {
     await receiver.start().catch(() => {});
   }
 
+  private startMask() {
+    if (this.mask || !this.participantId) return;
+    const channel = this.o.backend!.maskChannel(this.participantId);
+    const state = { channel, off: () => {}, timer: null as ReturnType<typeof setTimeout> | null };
+    state.off = channel.onFrame((frame) => {
+      const dots = faceDots(decodeFace(frame), { perEdge: 2, keepPose: true });
+      if (dots.length === 0) return;
+      this.main?.setLiveFace(dots);
+      if (state.timer) clearTimeout(state.timer);
+      state.timer = setTimeout(() => this.main?.setLiveFace(null), this.o.maskTimeoutMs ?? 3000);
+    });
+    this.mask = state;
+  }
+
+  private stopMask() {
+    const m = this.mask;
+    this.mask = null;
+    if (!m) return;
+    m.off();
+    if (m.timer) clearTimeout(m.timer);
+    this.main?.setLiveFace(null);
+    void m.channel.close();
+  }
+
   private async stopVideo() {
+    this.stopMask();
     const r = this.receiver;
     this.receiver = null;
     this.main?.setVideo(null);

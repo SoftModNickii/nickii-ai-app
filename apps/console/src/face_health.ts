@@ -14,6 +14,10 @@ export interface HeartbeatData {
   camera_ok?: boolean;
   /** false when the face-capture window is hidden or minimised (the browser then slows it down). */
   tab_visible?: boolean;
+  /** 'phone' or 'computer'. */
+  device?: string;
+  /** Face capture is sending the live mask to the participant in transmission. */
+  mask_live?: boolean;
 }
 
 export type FaceHealthLevel = 'ok' | 'warning' | 'down' | 'never';

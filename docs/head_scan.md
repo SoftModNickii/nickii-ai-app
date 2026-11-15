@@ -1,12 +1,31 @@
 # Your head as the 3D dots
 
-Participants see a floating point-cloud head. Until you publish a scan it is a generated placeholder.
-This is how to replace it with your own head, scanned once with your iPhone or iPad.
+Participants see a floating point-cloud head. Until you publish one it is a generated placeholder.
+Two ways to make it yours:
 
-## Why a scanning app (and not our web app)
+## A. With your iPhone, no extra app (quickest)
+1. On the iPhone, open **https://softmodnickii.github.io/nickii-ai-app/face/** in Safari, log in,
+   then Share → **Add to Home Screen** ("Nickii Face"). From then on, open it from the icon.
+2. Tap **Start recording**, allow the camera. You see your face as moving dots (**Show camera** switches
+   to the picture). From now on it starts by itself whenever you open the icon.
+3. Tap **Use my face as the head**, look straight into the camera for the countdown and hold still for
+   two seconds. Done: every participant's app shows your face as the head.
+
+The front camera gives your face's shape (468 points from Google's MediaPipe, densified along the face
+mesh); the back of the head is generated around it.
+
+While someone is in **LIVE**, the same page sends your face live to their phone as moving dots
+("Send my face to the person in LIVE", on by default). If you also switch the console's **Camera on**,
+they see the camera video instead.
+
+## B. With a 3D-scanning app (more detail: hair, back of the head)
+Below. This uses the console's **Head scan** panel.
+
+## Why route B needs a separate scanning app
 Safari does not let web pages read the LiDAR or TrueDepth depth sensors; only native apps can
-(Apple's ARKit). So the scan is made with a free scanning app, and our console turns the file into the
-dots. Nothing has to be live: you scan once, publish, and every participant's app switches to it.
+(Apple's ARKit). Route A works around that with the normal camera picture and MediaPipe, which estimates
+depth from the image. Route B uses the real depth sensor through a scanning app, and our console turns
+the file into the dots.
 *(Checked against what we know of Safari as of 2026; not re-verified from this build machine.)*
 
 ## 1. Scan (iPhone or iPad)

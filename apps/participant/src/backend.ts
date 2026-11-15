@@ -2,7 +2,7 @@
 // so it can be tested with demo_backend.ts and run without a server for design previews.
 
 import type {
-  HeadPoint, LinePosition, LineStatus, LiveSignal, Message, Mode, OperatorStatus, ParticipantEvent, PushSubscriptionInfo,
+  HeadPoint, LinePosition, LineStatus, LiveSignal, MaskChannel, Message, Mode, OperatorStatus, ParticipantEvent, PushSubscriptionInfo,
 } from '@nickii/shared';
 
 export interface Backend {
@@ -35,6 +35,8 @@ export interface Backend {
   insertEvents(events: ParticipantEvent[]): Promise<void>;
   /** Signalling channel for the live video of this participant's transmission. */
   liveSignal(participantId: string): LiveSignal;
+  /** Live mask frames (Nickii's face as dots) during this participant's transmission. */
+  maskChannel(participantId: string): MaskChannel;
   /** "I am here": every 30 s while open, and once when hidden. */
   reportPresence(visible: boolean, mode: Mode, platform: string): Promise<void>;
 

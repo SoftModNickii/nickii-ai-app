@@ -61,6 +61,7 @@ async function launch(device: Partial<FakeDevice>, demo: DemoHandle | null = dem
     streamOptions: { baseMs: 1, jitter: 0 },
     linePollMs: 1_000_000,
     headStyle: 'svg',
+    maskTimeoutMs: 200,
   });
   await app.start();
   await settle();
@@ -213,6 +214,26 @@ describe('head scan', () => {
     demo.act.setStatus({ head_version: 'missing' });
     await settle();
     expect(app.shownHead).toBe('scan_1');
+  });
+});
+
+describe('live mask', () => {
+  it('in LIVE, Nickii\'s face frames show as dots; without frames it goes back to the head', async () => {
+    const { encodeFace } = await import('@nickii/shared');
+    const lm = Array.from({ length: 478 }, (_, i) => ({ x: 0.5 + 0.1 * Math.cos(i), y: 0.5 + 0.15 * Math.sin(i * 1.3), z: -0.03 }));
+    const demo = demoBackend({ agreed: true });
+    const app = await launch({}, demo);
+    demo.act.sendMask(encodeFace(lm, 4 / 3)); // not in LIVE yet: ignored
+    expect(app.showingLiveFace).toBe(false);
+    demo.act.setLine('live');
+    await settle();
+    demo.act.sendMask(encodeFace(lm, 4 / 3));
+    expect(app.showingLiveFace).toBe(true);
+    await vi.waitFor(() => expect(app.showingLiveFace).toBe(false), { timeout: 2000 });
+    demo.act.sendMask(encodeFace(lm, 4 / 3));
+    demo.act.setLine('done');
+    await settle();
+    expect(app.showingLiveFace).toBe(false);
   });
 });
 
