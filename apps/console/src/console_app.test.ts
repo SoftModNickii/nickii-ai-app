@@ -18,6 +18,7 @@ function fakeBackend() {
     heartbeat: null as { t_ms: number; data: HeartbeatData } | null,
     online: new Set<string>(),
     signals: [] as SignalMessage[],
+    uploads: [] as Array<{ version: string; bytes: number }>,
   };
   let n = 0;
   const msgCbs: Array<(m: Message) => void> = [];
@@ -72,6 +73,7 @@ function fakeBackend() {
       state.line.push({ id: `l${state.line.length}`, participant_id: id, status: 'invited', invited_t_ms: 0, arrived_t_ms: null, started_t_ms: null, ended_t_ms: null });
     },
     updateLine: async (id, change) => { Object.assign(state.line.find((e) => e.id === id)!, change); },
+    uploadHead: async (version: string, data: ArrayBuffer) => { state.uploads.push({ version, bytes: data.byteLength }); },
     liveSignal: () => ({ async send(m) { state.signals.push(m); }, onMessage: () => () => {}, close: async () => {} }),
     logEvent: async (e) => { state.events.push(e); },
     lastHeartbeat: async () => state.heartbeat,
@@ -93,7 +95,10 @@ async function start(fake = fakeBackend(), loggedIn = true) {
   fake.state.loggedIn = loggedIn;
   root = document.createElement('main');
   document.body.replaceChildren(root);
-  const app = new ConsoleApp({ root, backend: fake.backend, getCamera: fakeCamera });
+  const app = new ConsoleApp({
+    root, backend: fake.backend, getCamera: fakeCamera,
+    makeHeadPreview: async () => ({ el: document.createElement('canvas'), setPoints() {}, setTurn() {}, dispose() {} }),
+  });
   await app.start();
   await settle();
   return app;
@@ -263,6 +268,38 @@ describe('controls', () => {
     expect(root.querySelector<HTMLVideoElement>('.cam-preview')!.hidden).toBe(true);
     expect(fake.state.line[0]!.status).toBe('done');
     expect(names(fake.state).filter((n) => n === 'mask_clip')).toHaveLength(2);
+    app.stop();
+  });
+
+  it('head scan: load a PLY, adjust, publish → participants get the new version', async () => {
+    const fake = fakeBackend();
+    const app = await start(fake);
+    expect(root.textContent).toContain('Participants see: the placeholder head.');
+    // A small ASCII PLY: a 20×20×20 grid of points (a "head" in a box).
+    const lines = [];
+    for (let x = 0; x < 20; x++) for (let y = 0; y < 20; y++) for (let z = 0; z < 20; z++) lines.push(`${x / 20} ${y / 20} ${z / 20}`);
+    const ply = `ply\nformat ascii 1.0\nelement vertex ${lines.length}\nproperty float x\nproperty float y\nproperty float z\nend_header\n${lines.join('\n')}\n`;
+    const file = Object.assign(new Blob([ply]), { name: 'nickii.ply' });
+    await app.head!.load(file);
+    expect(root.textContent).toContain('nickii.ply: 8,000 points');
+    expect(app.head!.result.length).toBeGreaterThan(1000);
+    await app.head!.publish();
+    await settle();
+    expect(fake.state.uploads).toHaveLength(1);
+    expect(fake.state.uploads[0]!.version).toMatch(/^scan_\d{8}_\d{6}$/);
+    expect(fake.state.status.head_version).toBe(fake.state.uploads[0]!.version);
+    expect(root.textContent).toContain('Participants see: your scan');
+    btn('Use placeholder head').click(); await settle();
+    expect(fake.state.status.head_version).toBeNull();
+    app.stop();
+  });
+
+  it('head scan: a wrong file explains itself and publishes nothing', async () => {
+    const fake = fakeBackend();
+    const app = await start(fake);
+    await app.head!.load(Object.assign(new Blob(['not a scan']), { name: 'face.usdz' }));
+    expect(root.textContent).toContain('Please export the scan as PLY or OBJ.');
+    expect(fake.state.uploads).toHaveLength(0);
     app.stop();
   });
 

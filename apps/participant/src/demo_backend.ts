@@ -2,7 +2,7 @@
 // (CLAUDE.md). The `act` handle lets tests (or the console of a preview) play Nickii's side.
 
 import type {
-  LinePosition, LineStatus, LiveSignal, Message, OperatorStatus, ParticipantEvent, SignalMessage,
+  HeadPoint, LinePosition, LineStatus, LiveSignal, Message, OperatorStatus, ParticipantEvent, SignalMessage,
 } from '@nickii/shared';
 import type { Backend } from './backend';
 
@@ -13,6 +13,8 @@ export interface DemoHandle {
     setStatus(s: Partial<OperatorStatus>): void;
     setLine(status: LineStatus | null, position?: number): void;
     setOnline(online: boolean): void;
+    /** Publish a head (as the console would). */
+    setHead(version: string | null, points?: HeadPoint[]): void;
   };
   state: {
     agreed: boolean;
@@ -30,6 +32,7 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
     agreed: opts.agreed ?? false, messages: [], events: [], pushSubscriptions: 0, line: null, presence: [], signals: [],
   };
   let status: OperatorStatus = { state: 'live', status_word: 'LISTENING', updated_t_ms: Date.now() };
+  const heads = new Map<string, HeadPoint[]>();
   const msgCbs = new Set<(m: Message) => void>();
   const statusCbs = new Set<(s: OperatorStatus) => void>();
   const lineCbs = new Set<(s: LineStatus) => void>();
@@ -57,6 +60,11 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
     async sendMessage(body, inputMethod) { return add('participant', body, inputMethod); },
     onMessage(cb) { return sub(msgCbs, cb); },
     async loadStatus() { return status; },
+    async loadHead(version) {
+      const h = heads.get(version);
+      if (!h) throw new Error('no such head');
+      return h;
+    },
     onStatus(cb) { return sub(statusCbs, cb); },
     async loadLine() { return state.line; },
     onLineChange(cb) { return sub(lineCbs, cb); },
@@ -84,6 +92,10 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
       if (lineStatus) lineCbs.forEach((cb) => cb(lineStatus));
     },
     setOnline(online) { connCbs.forEach((cb) => cb(online)); },
+    setHead(version, points) {
+      if (version && points) heads.set(version, points);
+      act.setStatus({ head_version: version });
+    },
   };
 
   return { backend, act, state };

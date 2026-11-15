@@ -2,7 +2,7 @@
 // so it can be tested with demo_backend.ts and run without a server for design previews.
 
 import type {
-  LinePosition, LineStatus, LiveSignal, Message, Mode, OperatorStatus, ParticipantEvent, PushSubscriptionInfo,
+  HeadPoint, LinePosition, LineStatus, LiveSignal, Message, Mode, OperatorStatus, ParticipantEvent, PushSubscriptionInfo,
 } from '@nickii/shared';
 
 export interface Backend {
@@ -22,6 +22,8 @@ export interface Backend {
   onMessage(cb: (m: Message) => void): Unsubscribe;
 
   loadStatus(): Promise<OperatorStatus>;
+  /** Nickii's published head scan (OperatorStatus.head_version). */
+  loadHead(version: string): Promise<HeadPoint[]>;
   onStatus(cb: (s: OperatorStatus) => void): Unsubscribe;
 
   loadLine(): Promise<LinePosition | null>;

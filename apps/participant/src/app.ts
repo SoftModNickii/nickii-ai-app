@@ -47,6 +47,9 @@ export class ParticipantApp {
   private linePoll: ReturnType<typeof setInterval> | null = null;
   private presenceTimer: ReturnType<typeof setInterval> | null = null;
   private receiver: LiveReceiver | null = null;
+  private headVersion: string | null = null;
+  /** For tests: the head version currently shown. */
+  get shownHead(): string | null { return this.headVersion; }
   private checking: Promise<void> | null = null;
   private opened = false;
 
@@ -174,9 +177,10 @@ export class ParticipantApp {
       this.online = false;
     }
     this.main.addMessages(this.messages);
+    void this.updateHead();
     this.subs.push(
       backend.onMessage((m) => this.onNewMessage(m)),
-      backend.onStatus((s) => { this.status = s; this.render(); }),
+      backend.onStatus((s) => { this.status = { ...this.status, ...s }; void this.updateHead(); this.render(); }),
       backend.onLineChange((s) => void this.onLineChange(s)),
       backend.onConnection((online) => {
         this.online = online;
@@ -204,6 +208,24 @@ export class ParticipantApp {
     void this.stopVideo();
     this.main?.dispose();
     this.main = null;
+  }
+
+  /** Shows Nickii's published head scan; keeps the current one if loading fails. */
+  private async updateHead() {
+    const version = this.status.head_version ?? null;
+    if (version === this.headVersion) return;
+    if (!version) {
+      this.headVersion = null;
+      this.main?.setHeadPoints(null);
+      return;
+    }
+    try {
+      const points = await this.o.backend!.loadHead(version);
+      this.headVersion = version;
+      this.main?.setHeadPoints(points);
+    } catch {
+      // Network or missing file: keep what is shown; the next status update tries again.
+    }
   }
 
   /** Tells the server this app is open (so the console can count who is online). Never throws. */

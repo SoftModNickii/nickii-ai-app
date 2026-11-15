@@ -191,6 +191,31 @@ describe('chat', () => {
   });
 });
 
+describe('head scan', () => {
+  it('shows the published head, switches when a new one is published, back to placeholder on null', async () => {
+    const demo = demoBackend({ agreed: true });
+    const dots = [{ x: 0, y: 0, z: 0.1, a: 1 }];
+    demo.act.setHead('scan_1', dots);
+    const app = await launch({}, demo);
+    expect(app.shownHead).toBe('scan_1');
+    demo.act.setHead('scan_2', [...dots, ...dots]);
+    await settle();
+    expect(app.shownHead).toBe('scan_2');
+    demo.act.setHead(null);
+    await settle();
+    expect(app.shownHead).toBeNull();
+  });
+
+  it('keeps the current head when the new file cannot be loaded', async () => {
+    const demo = demoBackend({ agreed: true });
+    demo.act.setHead('scan_1', [{ x: 0, y: 0, z: 0, a: 1 }]);
+    const app = await launch({}, demo);
+    demo.act.setStatus({ head_version: 'missing' });
+    await settle();
+    expect(app.shownHead).toBe('scan_1');
+  });
+});
+
 describe('presence', () => {
   it('reports "I am here" when the chat opens and when the app goes to the background', async () => {
     const demo = demoBackend({ agreed: true });

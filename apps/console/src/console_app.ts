@@ -10,6 +10,7 @@ import type { ConsoleBackend, OperatorEventInput, Unsubscribe } from './console_
 import { INVITE_PUSH_TEXT, STATUS_WORD_CHOICES } from './copy';
 import { faceHealth, type HeartbeatData } from './face_health';
 import { formatWait, sortInbox, waitingCount } from './inbox_order';
+import { HeadPanel, type HeadPreview } from './head_panel';
 
 type Panel = 'inbox' | 'thread' | 'control';
 
@@ -26,6 +27,8 @@ export interface ConsoleOptions {
   timezone?: string;
   /** Camera access (tests replace it). */
   getCamera?: (audio: boolean) => Promise<MediaStream>;
+  /** 3D preview of the head scan (tests replace it). */
+  makeHeadPreview?: () => Promise<HeadPreview>;
 }
 
 export class ConsoleApp {
@@ -43,6 +46,7 @@ export class ConsoleApp {
   private camera: MediaStream | null = null;
   private cameraState: LiveState = 'idle';
   private withMic = false;
+  private headPanel: HeadPanel | null = null;
   private online = new Set<string>();
   private subs: Unsubscribe[] = [];
   private timers: ReturnType<typeof setInterval>[] = [];
@@ -116,7 +120,13 @@ export class ConsoleApp {
     this.renderAll();
   }
 
+  /** For tests. */
+  get head(): HeadPanel | null {
+    return this.headPanel;
+  }
+
   stop(): void {
+    this.headPanel?.dispose();
     if (this.sender) void this.cameraOff();
     this.subs.forEach((u) => u());
     this.timers.forEach(clearInterval);
@@ -182,6 +192,21 @@ export class ConsoleApp {
     const bcBtn = h('button', { type: 'button', class: 'btn secondary' }, 'Send to all');
     bcBtn.onclick = () => void this.broadcast(bc);
     e.faceDetail = h('p', { class: 'quiet small' });
+    this.headPanel = new HeadPanel({
+      current: () => this.status.head_version ?? null,
+      makePreview: this.o.makeHeadPreview,
+      publish: async (version, data) => {
+        await this.b.uploadHead(version, data);
+        await this.b.setStatus({ head_version: version });
+        this.status = { ...this.status, head_version: version };
+        await this.log('mask_clip', { head: version });
+      },
+      usePlaceholder: async () => {
+        await this.b.setStatus({ head_version: null });
+        this.status = { ...this.status, head_version: null };
+        await this.log('mask_clip', { head: null });
+      },
+    });
 
     const nav = h('nav', { class: 'panels' }, ...(['inbox', 'thread', 'control'] as Panel[]).map((p) => {
       const b = h('button', { type: 'button', attrs: { 'data-panel': p } }, p[0]!.toUpperCase() + p.slice(1));
@@ -201,7 +226,8 @@ export class ConsoleApp {
       h('section', { class: 'col col-control' },
         h('h2', {}, 'Holding line'), e.line, e.preview, e.camStatus,
         h('h2', {}, 'Push to all'), bc, bcBtn,
-        h('h2', {}, 'Face capture'), e.faceDetail));
+        h('h2', {}, 'Face capture'), e.faceDetail,
+        h('h2', {}, 'Head scan'), this.headPanel.el));
     clear(this.o.root);
     this.o.root.append(e.main);
   }
@@ -221,6 +247,7 @@ export class ConsoleApp {
   }
 
   private renderStatus() {
+    this.headPanel?.renderCurrent();
     const live = this.status.state === 'live';
     this.el.liveBtn!.textContent = live ? '● LIVE' : '○ AWAY';
     this.el.liveBtn!.classList.toggle('on', live);

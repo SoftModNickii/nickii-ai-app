@@ -92,3 +92,11 @@ input:focus, textarea:focus { border-color: var(--accent); }
 
 .cam-preview { width: 100%; max-width: 220px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 16px; background: var(--surface-soft); transform: scaleX(-1); }
 .line label { display: inline-flex; align-items: center; gap: 4px; }
+
+.head-panel { display: grid; gap: 8px; }
+.head-controls { display: grid; gap: 8px; }
+.head-row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 8px; }
+.head-row input[type="range"] { width: 100%; }
+.head-preview-slot { display: flex; justify-content: center; background: var(--bg); border-radius: 16px; }
+.head-preview { width: 220px; aspect-ratio: 300 / 360; display: block; }
+select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 8px; font-size: 13px; }

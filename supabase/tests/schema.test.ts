@@ -257,3 +257,24 @@ describe('presence and console stats (0002)', () => {
     expect(s!.online_now).toBe(0);
   });
 });
+
+describe('head scan (0003)', () => {
+  it('only Nickii can set the head version; everyone signed in can read it', async () => {
+    await as(ALICE, () => db.query(`update public.operator_status set head_version = 'hack'`));
+    expect((await rows<{ head_version: string | null }>('select head_version from public.operator_status'))[0]!.head_version).toBeNull();
+    await as(NICKII, () => db.query(`update public.operator_status set head_version = 'scan_1'`));
+    const [s] = await as(ALICE, () => rows<{ head_version: string }>('select head_version from public.operator_status'));
+    expect(s!.head_version).toBe('scan_1');
+  });
+
+  it('rejects odd version names (they end up in a file path)', async () => {
+    await as(NICKII, () => fails(`update public.operator_status set head_version = '../x'`));
+  });
+
+  it('public_assets bucket is public; only Nickii uploads', async () => {
+    const [b] = await rows<{ public: boolean }>(`select public from storage.buckets where id = 'public_assets'`);
+    expect(b!.public).toBe(true);
+    await as(NICKII, () => db.query(`insert into storage.objects (bucket_id, name) values ('public_assets', 'head/scan_1.bin')`));
+    await as(ALICE, () => fails(`insert into storage.objects (bucket_id, name) values ('public_assets', 'head/x.bin')`));
+  });
+});

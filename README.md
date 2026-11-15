@@ -10,6 +10,7 @@ App for Nickii Schamborski's 7-day durational performance "Nickii AI".
 - `docs/decisions.md` — what was decided and why; open decisions; App Store path
 - `docs/build_brief.md` — what to build, in order
 - `docs/dataset.md` — how the 7 days are recorded as a dataset
+- `docs/head_scan.md` — scan your head on iPhone/iPad and make it the 3D dots
 
 | Folder | What |
 | --- | --- |

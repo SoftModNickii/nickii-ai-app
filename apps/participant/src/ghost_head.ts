@@ -3,9 +3,13 @@
 
 import svgSource from '../../../assets/mask/ghost_head.svg?raw';
 
+import type { HeadPoint } from '@nickii/shared';
+
 export interface GhostHead {
   el: HTMLElement;
   setAway(away: boolean): void;
+  /** Show Nickii's scanned head (null = placeholder). The flat fallback ignores it. */
+  setPoints(points: HeadPoint[] | null): void;
   dispose(): void;
 }
 
@@ -33,7 +37,7 @@ export async function ghostHead(extraClass = '', force?: 'svg' | '3d'): Promise<
   const want3d = force === '3d' || (force !== 'svg' && await can3d());
   if (want3d) {
     try {
-      const { ghostHead3D } = await import('./ghost_head_3d');
+      const { ghostHead3D } = await import('@nickii/shared/head_render');
       const head = ghostHead3D();
       head.el.className = `ghost ghost-3d ${extraClass}`.trim();
       return head;
@@ -45,6 +49,7 @@ export async function ghostHead(extraClass = '', force?: 'svg' | '3d'): Promise<
   return {
     el: svg as unknown as HTMLElement,
     setAway(away) { svg.classList.toggle('away', away); },
+    setPoints() {},
     dispose() {},
   };
 }
