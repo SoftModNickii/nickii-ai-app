@@ -7,6 +7,8 @@ import { BLENDSHAPE_NAMES, FACE_CSV_HEADER } from '@nickii/shared';
 export interface FaceResultLike {
   faceBlendshapes: Array<{ categories: Array<{ categoryName: string; score: number }> }>;
   facialTransformationMatrixes: Array<{ rows: number; columns: number; data: number[] }>;
+  /** 478 points per face, image coordinates (used for the live mask and the head snapshot, not recorded). */
+  faceLandmarks?: Array<Array<{ x: number; y: number; z: number }>>;
 }
 
 const INDEX = new Map(BLENDSHAPE_NAMES.map((n, i) => [n as string, i]));

@@ -9,3 +9,5 @@ export * from './dom';
 export * from './live_video';
 export * from './head_points';
 export * from './head_model';
+export * from './face_mask';
+export * from './mask_channel';

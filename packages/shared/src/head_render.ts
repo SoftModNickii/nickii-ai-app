@@ -130,6 +130,19 @@ export function ghostHead3D(initial: HeadPoint[] | null = null): Head3D {
     el,
     setAway(v) { away = v; },
     setPoints(pts) {
+      // Live mask: same number of dots every frame, so only move them (no new buffers, no garbage).
+      const pos = geometry.getAttribute('position') as THREE.BufferAttribute;
+      const bri = geometry.getAttribute('brightness') as THREE.BufferAttribute;
+      if (pts && pts.length && pts.length === pos.count) {
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i]!;
+          pos.setXYZ(i, p.x, p.y, p.z);
+          bri.setX(i, p.a);
+        }
+        pos.needsUpdate = true;
+        bri.needsUpdate = true;
+        return;
+      }
       const next = buildGeometry(pts && pts.length ? pts : headPoints(POINTS));
       points.geometry = next;
       geometry.dispose();

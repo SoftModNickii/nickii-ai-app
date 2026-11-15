@@ -342,7 +342,7 @@ export class ConsoleApp {
     this.el.health.className = `pill health-${fh.level}`;
     const d = this.heartbeat?.data;
     this.el.faceDetail!.textContent = d
-      ? `${fh.message} Frames today: ${d.frames_today ?? '–'} · ${d.fps?.toFixed(0) ?? '–'} fps · waiting uploads: ${d.pending_chunks ?? 0}`
+      ? `${fh.message} On the ${d.device ?? 'computer'}. Frames today: ${d.frames_today ?? '–'} · ${d.fps?.toFixed(0) ?? '–'} fps · waiting uploads: ${d.pending_chunks ?? 0}${d.mask_live ? ' · sending your face to LIVE' : ''}`
       : fh.message;
   }
 

@@ -22,6 +22,7 @@ export class MainScreen {
   private head: GhostHead | null = null;
   private away = false;
   private headPoints: HeadPoint[] | null = null;
+  private liveFace: HeadPoint[] | null = null;
   private readonly word: HTMLElement;
   private readonly sentence: HTMLElement;
   private readonly lineInfo: HTMLElement;
@@ -45,7 +46,7 @@ export class MainScreen {
     void ghostHead('', headStyle).then((head) => {
       this.head = head;
       head.setAway(this.away);
-      if (this.headPoints) head.setPoints(this.headPoints);
+      if (this.liveFace ?? this.headPoints) head.setPoints(this.liveFace ?? this.headPoints);
       this.headSlot.replaceChildren(head.el);
     });
     this.word = h('p', { class: 'status', attrs: { 'data-testid': 'status-word' } });
@@ -101,7 +102,19 @@ export class MainScreen {
   /** Nickii's scanned head (null = placeholder). */
   setHeadPoints(points: HeadPoint[] | null): void {
     this.headPoints = points;
-    this.head?.setPoints(points);
+    if (!this.liveFace) this.head?.setPoints(points);
+  }
+
+  /** Live mask: Nickii's face as moving dots during the transmission. null = back to the head. */
+  setLiveFace(points: HeadPoint[] | null): void {
+    const was = this.liveFace;
+    this.liveFace = points;
+    if (points) this.head?.setPoints(points);
+    else if (was) this.head?.setPoints(this.headPoints);
+  }
+
+  get showingLiveFace(): boolean {
+    return this.liveFace !== null;
   }
 
   /** Live transmission video. null = back to the head. */

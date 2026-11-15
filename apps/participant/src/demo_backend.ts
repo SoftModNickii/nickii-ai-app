@@ -2,7 +2,7 @@
 // (CLAUDE.md). The `act` handle lets tests (or the console of a preview) play Nickii's side.
 
 import type {
-  HeadPoint, LinePosition, LineStatus, LiveSignal, Message, OperatorStatus, ParticipantEvent, SignalMessage,
+  HeadPoint, LinePosition, LineStatus, LiveSignal, MaskChannel, Message, OperatorStatus, ParticipantEvent, SignalMessage,
 } from '@nickii/shared';
 import type { Backend } from './backend';
 
@@ -13,6 +13,8 @@ export interface DemoHandle {
     setStatus(s: Partial<OperatorStatus>): void;
     setLine(status: LineStatus | null, position?: number): void;
     setOnline(online: boolean): void;
+    /** A live mask frame from face capture (encodeFace string). */
+    sendMask(frame: string): void;
     /** Publish a head (as the console would). */
     setHead(version: string | null, points?: HeadPoint[]): void;
   };
@@ -37,6 +39,7 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
   const statusCbs = new Set<(s: OperatorStatus) => void>();
   const lineCbs = new Set<(s: LineStatus) => void>();
   const connCbs = new Set<(o: boolean) => void>();
+  const maskCbs = new Set<(f: string) => void>();
   const id = 'demo-participant';
   let n = 0;
 
@@ -72,6 +75,9 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
     async lineLeave() { act.setLine('left'); },
     async insertEvents(events) { state.events.push(...events); },
     async reportPresence(visible, mode) { state.presence.push({ visible, mode }); },
+    maskChannel(): MaskChannel {
+      return { send: async () => {}, onFrame: (cb) => sub(maskCbs, cb), close: async () => { maskCbs.clear(); } };
+    },
     liveSignal(): LiveSignal {
       return { async send(m) { state.signals.push(m); }, onMessage: () => () => {}, close: async () => {} };
     },
@@ -92,6 +98,7 @@ export function demoBackend(opts: { agreed?: boolean } = {}): DemoHandle {
       if (lineStatus) lineCbs.forEach((cb) => cb(lineStatus));
     },
     setOnline(online) { connCbs.forEach((cb) => cb(online)); },
+    sendMask(frame) { maskCbs.forEach((cb) => cb(frame)); },
     setHead(version, points) {
       if (version && points) heads.set(version, points);
       act.setStatus({ head_version: version });
