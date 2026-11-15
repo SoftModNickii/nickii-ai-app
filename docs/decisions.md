@@ -26,7 +26,12 @@ What was decided while building the foundation, and why. Things marked **Nickii 
     cannot connect (estimate: around 1 in 10). If tests show that, add a TURN server to `DEFAULT_ICE_SERVERS`
     (e.g. a small Coturn on a VPS, or a hosted one; **paid, Nickii decides**). The console's "with sound"
     box sends her voice as well; off by default. The phone never sends audio or video back.
-19. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
+19. **Nickii's head comes from a scanning app, not from our web app.** Safari gives web pages no access to
+    LiDAR/TrueDepth depth; a native ARKit app would mean an Apple developer account and App Store/TestFlight.
+    So: scan with a free app, export PLY/OBJ, import in the console (`packages/shared/src/head_model.ts`:
+    parse, orient, crop, sample evenly over the surface, encode), publish to the public bucket; participants
+    load it by `operator_status.head_version`. Placeholder stays the fallback. See docs/head_scan.md.
+20. **No paid service was added.** Everything runs on free tiers. The Supabase Pro plan in CLAUDE.md is Nickii's call.
 
 ## App store path (later, if wanted)
 The apps are web apps today. To ship in the App Store / Play Store, wrap the participant app with

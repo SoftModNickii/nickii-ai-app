@@ -20,7 +20,8 @@ The dataset test needs `pip install -r dataset/requirements.txt` first (step 8).
    inside the installed app (https://supabase.com/docs/guides/auth/auth-anonymous).
    Email sign-in stays on for Nickii's own login. Turn off "Confirm email" or confirm her address once.
 3. **Database:** open **SQL Editor**, paste the whole of `supabase/migrations/0001_schema.sql`, run it once;
-   then the same with `0002_presence_and_stats.sql` (every file in `supabase/migrations`, in name order).
+   then the same with `0002_presence_and_stats.sql` and `0003_head_scan.sql` (every file in
+   `supabase/migrations`, in name order).
    (With the Supabase CLI instead: `npx supabase link --project-ref <ref>` then `npx supabase db push`.)
 4. **Nickii's operator account:** Authentication → Users → Add user (her email + a strong password).
    Then in SQL Editor (replace the email):

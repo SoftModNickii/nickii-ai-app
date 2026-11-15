@@ -47,6 +47,8 @@ export interface OperatorStatus {
   state: OperatorState;
   status_word: string;     // shown to participants: LISTENING / THINKING / …
   updated_t_ms: number;
+  /** Published head scan (Storage public_assets/head/<version>.bin); null/absent = placeholder head. */
+  head_version?: string | null;
 }
 
 export interface PushSubscriptionRow {

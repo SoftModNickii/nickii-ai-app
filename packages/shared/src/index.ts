@@ -7,3 +7,5 @@ export * from './stream_text';
 export * from './supabase';
 export * from './dom';
 export * from './live_video';
+export * from './head_points';
+export * from './head_model';

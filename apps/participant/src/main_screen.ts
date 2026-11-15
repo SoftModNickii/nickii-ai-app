@@ -1,6 +1,6 @@
 // The Ghost UI: CHAT · LINE · LIVE bar, floating head, one status word, one sentence, and the thread.
 
-import { h, streamText, type LinePosition, type Message, type Mode, type StreamOptions } from '@nickii/shared';
+import { h, streamText, type HeadPoint, type LinePosition, type Message, type Mode, type StreamOptions } from '@nickii/shared';
 import { LABELS, LINE_LABELS, SENTENCES, type Lang } from './copy';
 import { InputMethodTracker, type InputMethod } from './input_method';
 import { availableModes } from './mode';
@@ -21,6 +21,7 @@ export class MainScreen {
   private readonly video: HTMLVideoElement;
   private head: GhostHead | null = null;
   private away = false;
+  private headPoints: HeadPoint[] | null = null;
   private readonly word: HTMLElement;
   private readonly sentence: HTMLElement;
   private readonly lineInfo: HTMLElement;
@@ -44,6 +45,7 @@ export class MainScreen {
     void ghostHead('', headStyle).then((head) => {
       this.head = head;
       head.setAway(this.away);
+      if (this.headPoints) head.setPoints(this.headPoints);
       this.headSlot.replaceChildren(head.el);
     });
     this.word = h('p', { class: 'status', attrs: { 'data-testid': 'status-word' } });
@@ -94,6 +96,12 @@ export class MainScreen {
   setAway(away: boolean): void {
     this.away = away;
     this.head?.setAway(away);
+  }
+
+  /** Nickii's scanned head (null = placeholder). */
+  setHeadPoints(points: HeadPoint[] | null): void {
+    this.headPoints = points;
+    this.head?.setPoints(points);
   }
 
   /** Live transmission video. null = back to the head. */

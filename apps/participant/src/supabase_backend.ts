@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  measureServerOffset, supabaseLiveSignal, type LinePosition, type LineStatus, type Message, type OperatorStatus,
+  decodeHead, measureServerOffset, supabaseLiveSignal, type LinePosition, type LineStatus, type Message, type OperatorStatus,
 } from '@nickii/shared';
 import type { Backend } from './backend';
 
@@ -76,7 +76,15 @@ export function supabaseBackend(client: SupabaseClient): Backend {
     },
 
     async loadStatus() {
-      return check(await client.from('operator_status').select('state, status_word, updated_t_ms').single()) as OperatorStatus;
+      // '*' so the app keeps working whether or not the head_version column exists yet.
+      return check(await client.from('operator_status').select('*').single()) as OperatorStatus;
+    },
+
+    async loadHead(version) {
+      const url = client.storage.from('public_assets').getPublicUrl(`head/${version}.bin`).data.publicUrl;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`head ${version}: ${res.status}`);
+      return decodeHead(await res.arrayBuffer());
     },
 
     onStatus(cb) {

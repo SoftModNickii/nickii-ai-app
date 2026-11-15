@@ -1,9 +1,10 @@
 // The floating point-cloud head as a real 3D object (Three.js): slowly turning, floating, flickering.
-// Falls back to the flat SVG when WebGL is missing or the person prefers reduced motion.
+// Shows Nickii's scanned head when one is published (head_model.ts), else the generated placeholder.
+// Imported on its own path ('@nickii/shared/head_render') so apps that do not show the head never load Three.js.
 // Three.js: https://threejs.org/docs/
 
 import * as THREE from 'three';
-import { headPoints } from './head_points';
+import { headPoints, type HeadPoint } from './head_points';
 
 const ACCENT = new THREE.Color('#B23E66');
 const POINTS = 2600;
@@ -16,20 +17,14 @@ export interface Head3D {
   el: HTMLCanvasElement;
   /** Dim and slow down (Nickii is away). */
   setAway(away: boolean): void;
+  /** Swap the dots (a newly published scan). null = placeholder. */
+  setPoints(points: HeadPoint[] | null): void;
+  /** Turn by hand instead of the slow automatic sway (console preview). null = automatic. */
+  setTurn(radians: number | null): void;
   dispose(): void;
 }
 
-export function ghostHead3D(): Head3D {
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  const el = renderer.domElement;
-  el.setAttribute('aria-hidden', 'true');
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(28, 300 / 360, 0.1, 10);
-  camera.position.set(0, 0.02, 2.4);
-
-  const pts = headPoints(POINTS);
+function buildGeometry(pts: HeadPoint[]): THREE.BufferGeometry {
   const positions = new Float32Array(pts.length * 3);
   const colors = new Float32Array(pts.length * 3);
   const sizes = new Float32Array(pts.length);
@@ -42,6 +37,20 @@ export function ghostHead3D(): Head3D {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.setAttribute('brightness', new THREE.BufferAttribute(sizes, 1));
+  return geometry;
+}
+
+export function ghostHead3D(initial: HeadPoint[] | null = null): Head3D {
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const el = renderer.domElement;
+  el.setAttribute('aria-hidden', 'true');
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(28, 300 / 360, 0.1, 10);
+  camera.position.set(0, 0.02, 2.4);
+
+  let geometry = buildGeometry(initial && initial.length ? initial : headPoints(POINTS));
 
   // Small round dots; brighter on the face side; fade with depth so the back stays quiet.
   const material = new THREE.ShaderMaterial({
@@ -72,6 +81,7 @@ export function ghostHead3D(): Head3D {
   scene.add(points);
 
   let away = false;
+  let manualTurn: number | null = null;
   let frame = 0;
   let disposed = false;
   const start = performance.now();
@@ -91,7 +101,11 @@ export function ghostHead3D(): Head3D {
     if (disposed) return;
     const t = (now - start) / 1000;
     const speed = away ? 0.5 : 1;
-    if (!still) {
+    if (manualTurn !== null) {
+      points.rotation.y = manualTurn;
+      points.rotation.x = 0;
+      points.position.y = 0;
+    } else if (!still) {
       points.rotation.y = Math.sin(t * 0.25 * speed) * 0.45;      // turns slowly left and right
       points.rotation.x = Math.sin(t * 0.17 * speed) * 0.08;
       points.position.y = Math.sin(t * 0.6 * speed) * 0.02;        // floats
@@ -115,6 +129,13 @@ export function ghostHead3D(): Head3D {
   return {
     el,
     setAway(v) { away = v; },
+    setPoints(pts) {
+      const next = buildGeometry(pts && pts.length ? pts : headPoints(POINTS));
+      points.geometry = next;
+      geometry.dispose();
+      geometry = next;
+    },
+    setTurn(r) { manualTurn = r; },
     dispose() {
       disposed = true;
       cancelAnimationFrame(frame);

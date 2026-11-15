@@ -7,9 +7,11 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./design.css": "./src/design.css"
+    "./design.css": "./src/design.css",
+    "./head_render": "./src/head_render.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.47.10"
+    "@supabase/supabase-js": "^2.47.10",
+    "three": "^0.170.0"
   }
 }

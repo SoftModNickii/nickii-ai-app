@@ -37,7 +37,9 @@ export interface ConsoleBackend {
   push(to: string[] | 'all', kind: 'reply' | 'broadcast' | 'line_invite', body: string): Promise<{ sent: number; removed: number; failed: number }>;
 
   loadStatus(): Promise<OperatorStatus>;
-  setStatus(s: Partial<Pick<OperatorStatus, 'state' | 'status_word'>>): Promise<void>;
+  setStatus(s: Partial<Pick<OperatorStatus, 'state' | 'status_word' | 'head_version'>>): Promise<void>;
+  /** Uploads a head scan file to the public bucket (public_assets/head/<version>.bin). */
+  uploadHead(version: string, data: ArrayBuffer): Promise<void>;
 
   loadLine(): Promise<LineEntry[]>;
   onLineChange(cb: () => void): Unsubscribe;
@@ -131,12 +133,18 @@ export function supabaseConsoleBackend(client: SupabaseClient): ConsoleBackend {
     },
 
     async loadStatus() {
-      return check(await client.from('operator_status').select('state, status_word, updated_t_ms').single()) as OperatorStatus;
+      return check(await client.from('operator_status').select('*').single()) as OperatorStatus;
     },
 
     async setStatus(s) {
       const { data: now } = await client.rpc('server_time_ms');
       check(await client.from('operator_status').update({ ...s, updated_t_ms: now }).eq('id', 1));
+    },
+
+    async uploadHead(version, data) {
+      check(await client.storage.from('public_assets').upload(`head/${version}.bin`, new Blob([data]), {
+        upsert: true, contentType: 'application/octet-stream', cacheControl: '31536000',
+      }));
     },
 
     async loadLine() {
